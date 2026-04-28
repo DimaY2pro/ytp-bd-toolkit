@@ -753,6 +753,16 @@ function saveToFile(){ saveToOneDrive(); }
 
 function doSave(){ saveToOneDrive(); }
 
+// ── HELPER: replace array/object in HTML source ──
+function repArr(html, name, val){
+  return html.replace(new RegExp('(const '+name+'=)\\[[\\s\\S]*?\\];(\\s*(?:const|let|var|function|//))'),
+    function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
+}
+function repObj(html, name, val){
+  return html.replace(new RegExp('(const '+name+'=)\\{[\\s\\S]*?\\};(\\s*(?:const|let|var|function|//))'),
+    function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
+}
+
 // ── MICROSOFT GRAPH — SAVE TO ONEDRIVE ──
 const MSAL_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
 const MSAL_AUTHORITY = 'https://login.microsoftonline.com/organizations';
@@ -1915,6 +1925,16 @@ function showView(view,btn){
 function saveToFile(){ saveToOneDrive(); }
 
 function doSave(){ saveToOneDrive(); }
+
+// ── HELPER: replace array/object in HTML source ──
+function repArr(html, name, val){
+  return html.replace(new RegExp('(const '+name+'=)\\[[\\s\\S]*?\\];(\\s*(?:const|let|var|function|//))'),
+    function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
+}
+function repObj(html, name, val){
+  return html.replace(new RegExp('(const '+name+'=)\\{[\\s\\S]*?\\};(\\s*(?:const|let|var|function|//))'),
+    function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
+}
 
 // ── MICROSOFT GRAPH — SAVE TO ONEDRIVE ──
 const MSAL_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
