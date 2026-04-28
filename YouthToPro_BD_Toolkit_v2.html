@@ -863,7 +863,8 @@ async function saveToSharePoint() {
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
-      showToast();
+      const t = document.getElementById('toast');
+      if (t) { t.className = 'toast show'; setTimeout(() => t.className = 'toast', 2500); }
     } else {
       const errText = await response.text();
       throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
@@ -1753,7 +1754,8 @@ async function saveToSharePoint() {
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
-      showToast();
+      const t = document.getElementById('toast');
+      if (t) { t.className = 'toast show'; setTimeout(() => t.className = 'toast', 2500); }
     } else {
       const errText = await response.text();
       throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
