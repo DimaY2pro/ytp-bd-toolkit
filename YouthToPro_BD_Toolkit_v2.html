@@ -784,7 +784,7 @@ async function getOneDriveToken() {
   }
 
   // Need to authenticate — redirect to Microsoft login
-  const redirectUri = encodeURIComponent('https://youthtoprofessionals.sharepoint.com/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit/YouthToPro_BD_Toolkit_v2.html');
+  const redirectUri = encodeURIComponent('https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html');
   const scope = encodeURIComponent(MSAL_SCOPES.join(' '));
   const state = encodeURIComponent(JSON.stringify({action:'save'}));
   const authUrl = `${MSAL_AUTHORITY}/oauth2/v2.0/authorize?client_id=${MSAL_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_mode=fragment`;
@@ -1947,7 +1947,7 @@ async function getOneDriveToken() {
   }
 
   // Need to authenticate — redirect to Microsoft login
-  const redirectUri = encodeURIComponent('https://youthtoprofessionals.sharepoint.com/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit/YouthToPro_BD_Toolkit_v2.html');
+  const redirectUri = encodeURIComponent('https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html');
   const scope = encodeURIComponent(MSAL_SCOPES.join(' '));
   const state = encodeURIComponent(JSON.stringify({action:'save'}));
   const authUrl = `${MSAL_AUTHORITY}/oauth2/v2.0/authorize?client_id=${MSAL_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_mode=fragment`;
