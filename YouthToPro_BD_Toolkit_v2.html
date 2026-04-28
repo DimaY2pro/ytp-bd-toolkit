@@ -763,58 +763,69 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── MICROSOFT GRAPH — SAVE TO ONEDRIVE ──
-const MSAL_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const MSAL_AUTHORITY = 'https://login.microsoftonline.com/organizations';
-const MSAL_SCOPES = ['https://youthtoprofessionals.sharepoint.com/AllSites.Write', 'User.Read'];
-let _msalToken = null;
-let _oneDriveFileName = null;
+// ── SAVE TO SHAREPOINT VIA REST API ──
+const SP_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
+const SP_TENANT = 'youthtoprofessionals.sharepoint.com';
+const SP_SITE = '/sites/Directory';
+const SP_FILE_PATH = '/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html';
+const SP_RESOURCE = 'https://youthtoprofessionals.sharepoint.com';
+const REDIRECT_URI = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
 
-async function getOneDriveToken() {
-  // Use MSAL implicit flow via redirect
-  // Check if we already have a token in sessionStorage
-  const cached = sessionStorage.getItem('yt_msal_token');
-  const cachedExp = sessionStorage.getItem('yt_msal_exp');
+async function getSharePointToken() {
+  // Check sessionStorage cache
+  const cached = sessionStorage.getItem('sp_token');
+  const cachedExp = sessionStorage.getItem('sp_token_exp');
   if (cached && cachedExp && Date.now() < parseInt(cachedExp)) {
     return cached;
   }
 
-  // Check URL hash for token (after redirect back)
+  // Check URL hash for returned token
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.replace('#','?').slice(1));
+    const params = new URLSearchParams(hash.replace(/^#/,''));
     const token = params.get('access_token');
     const expiresIn = parseInt(params.get('expires_in') || '3600');
     if (token) {
-      sessionStorage.setItem('yt_msal_token', token);
-      sessionStorage.setItem('yt_msal_exp', Date.now() + expiresIn * 1000 - 60000);
+      sessionStorage.setItem('sp_token', token);
+      sessionStorage.setItem('sp_token_exp', String(Date.now() + expiresIn * 1000 - 60000));
+      // Restore any pending save state
+      const pending = sessionStorage.getItem('sp_pending_save');
+      if (pending) {
+        sessionStorage.removeItem('sp_pending_save');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return token;
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
       return token;
     }
   }
 
-  // Need to authenticate — redirect to Microsoft login
-  const redirectUri = encodeURIComponent('https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html');
-  const scope = encodeURIComponent(MSAL_SCOPES.join(' '));
-  const state = encodeURIComponent(JSON.stringify({action:'save'}));
-  const authUrl = `${MSAL_AUTHORITY}/oauth2/v2.0/authorize?client_id=${MSAL_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_mode=fragment`;
+  // Redirect to Microsoft login with SharePoint resource
+  sessionStorage.setItem('sp_pending_save', '1');
+  const authUrl = 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'
+    + '?client_id=' + SP_CLIENT_ID
+    + '&response_type=token'
+    + '&redirect_uri=' + encodeURIComponent(REDIRECT_URI)
+    + '&scope=' + encodeURIComponent(SP_RESOURCE + '/AllSites.Write ' + SP_RESOURCE + '/AllSites.Read')
+    + '&response_mode=fragment'
+    + '&prompt=select_account';
   window.location.href = authUrl;
   return null;
 }
 
-async function saveToOneDrive() {
+async function saveToSharePoint() {
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '';
+  const origText = btn ? btn.textContent : '↑ Save to OneDrive';
 
   try {
     if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
 
-    const token = await getOneDriveToken();
-    if (!token) return; // redirecting to login
+    const token = await getSharePointToken();
+    if (!token) return; // redirecting
 
     if (btn) btn.textContent = 'Saving...';
 
-    // Build the updated file content
+    // Build updated file content
     let html = _ORIGINAL_SRC;
     if (!html) {
       const el = document.getElementById('_src');
@@ -823,349 +834,56 @@ async function saveToOneDrive() {
     }
     if (!html) { alert('Source not available. Please reload.'); return; }
 
-    // Update data in the file
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
     html = repObj(html, 'STRATEGIC', STRATEGIC);
 
-    // Rebuild textarea content
-    const escapedHtml = html.replace(/<\/textarea>/g, '<\\/textarea>');
-    const newSrc = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m, open, close) { return open + escapedHtml + close; });
+    // Rebuild textarea
+    const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
+    const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
+      function(m, open, close) { return open + escaped + close; }) || html;
 
-    const fileContent = newSrc || html;
-
-    // Find the file in OneDrive — search by name
-    if (!_oneDriveFileName) {
-      // Get the current filename from the page URL or use default
-      _oneDriveFileName = 'YouthToPro_BD_Toolkit_v2.html';
-    }
-
-    // Upload to OneDrive root — uses the simple upload API
-    const uploadUrl = `https://graph.microsoft.com/v1.0/sites/youthtoprofessionals.sharepoint.com:/sites/Directory:/drive/root:/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html:/content`;
+    // Upload via SharePoint REST API
+    const folderPath = '/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit';
+    const uploadUrl = 'https://' + SP_TENANT + SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('" + folderPath + "')/Files/add(url='YouthToPro_BD_Toolkit_v2.html',overwrite=true)";
 
     const response = await fetch(uploadUrl, {
-      method: 'PUT',
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'text/html',
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/octet-stream',
+        'X-RequestDigest': 'undefined'
       },
       body: fileContent
     });
 
     if (response.ok) {
-      const data = await response.json();
       if (btn) { btn.textContent = '✓ Saved'; btn.style.background = '#347969'; }
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
       showToast();
     } else {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Save failed');
+      const errText = await response.text();
+      throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
     }
 
   } catch(e) {
-    console.error('OneDrive save error:', e);
-    if (btn) { btn.textContent = '✗ Failed — retry'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => {
-      if (btn) { btn.textContent = origText; btn.style.background = ''; }
-    }, 4000);
-    alert('Save failed: ' + e.message + '\n\nMake sure you are signed in to OneDrive and have edit access to this file.');
+    console.error('SharePoint save error:', e);
+    if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
+    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; } }, 4000);
+    alert('Save failed: ' + e.message + '\n\nCheck console for details.');
   }
 }
 
-function renderScenarios(){
-  const el=document.getElementById('view-scenarios');
-  el.innerHTML=`<div id="sc-main"></div>`;
-  scRenderCards();
-}
+// Auto-complete save if returning from login redirect
+window.addEventListener('load', function() {
+  if (window.location.hash.includes('access_token') && sessionStorage.getItem('sp_pending_save')) {
+    setTimeout(saveToSharePoint, 500);
+  }
+});
 
-function scSetView(v){
-  sc_view=v;
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-  if(v==='journey') scRenderJourney();
-  else { sc_view='cards'; scRenderCards(); }
-}
-
-function scHover(el,col,on){
-  el.style.borderColor=on?col:'var(--border)';
-  el.style.boxShadow=on?'0 4px 20px rgba(0,0,0,0.1)':'var(--shadow)';
-}
-function scRenderCards(){
-  sc_view='cards';
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-  main.innerHTML=`
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:.5rem">
-    ${SC_JOURNEYS.map((j,i)=>`
-    <div onclick="scOpenJourney(${i})" onmouseover="scHover(this,'${j.col}',true)" onmouseout="scHover(this,'${j.col}',false)"
-      style="background:var(--bg);border-radius:var(--radius);padding:1.6rem 1.75rem;cursor:pointer;border:1px solid var(--border);transition:all .18s;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <span style="font-size:24px;color:${j.col};font-weight:300">${j.icon}</span>
-        <span style="font-size:11px;color:var(--text3);font-weight:500">${j.steps.length} steps →</span>
-      </div>
-      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px">${j.name}</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.55">${j.sub}</div>
-      <div style="margin-top:1.1rem;height:3px;border-radius:2px;background:${j.col};opacity:0.25;width:100%"></div>
-    </div>`).join('')}
-  </div>`;
-}
-
-function scOpenJourney(i){
-  sc_journeyIdx=i;
-  sc_stepIdx=0;
-  sc_view='journey';
-  scRenderJourney();
-}
-
-function scRenderJourney(){
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-
-  // Phase labels
-  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
-
-  // Group steps by phase for the stepper
-  let lastPhase='';
-  const stepperHTML=j.steps.map((s,i)=>{
-    const isActive=i===sc_stepIdx;
-    const isDone=i<sc_stepIdx;
-    const phaseChange=s.phase!==lastPhase;
-    lastPhase=s.phase;
-    const phasePill=phaseChange?`<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${phaseCols[s.phase]};margin-bottom:5px;padding-left:2px">${phaseLabel[s.phase]||s.phase}</div>`:'';
-    return `${phasePill}<button class="sc-step-btn" onclick="scGoStep(${i})" style="display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;border:1.5px solid ${isActive?phaseCols[s.phase]:'var(--border)'};background:${isActive?phaseBgs[s.phase]:'transparent'};cursor:pointer;margin-bottom:5px;transition:all .15s;font-size:12.5px;font-weight:${isActive?'600':'400'};color:${isActive?phaseCols[s.phase]:isDone?'var(--text3)':'var(--text2)'}">${s.name}</button>`;
-  }).join('');
-
-  const s=j.steps[sc_stepIdx];
-  const pCol=phaseCols[s.phase]||j.col;
-  const pBg=phaseBgs[s.phase]||j.bg;
-
-  main.innerHTML=`
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-    <button onclick="scSetView('cards')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px">← Back</button>
-    <span style="font-size:15px;font-weight:600;color:${j.col}">${j.name}</span>
-    <span style="font-size:12px;color:var(--text3)">${j.sub}</span>
-  </div>
-  <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
-    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;border:1px solid var(--border)">
-      ${stepperHTML}
-    </div>
-    <div class="sc-card" id="sc-step-card"></div>
-  </div>`;
-
-  scRenderStep();
-  if(editMode) setTimeout(activateEditMode,60);
-}
-
-function scGoStep(i){
-  const _j=SC_JOURNEYS[sc_journeyIdx];
-  if(!_j||i<0||i>=_j.steps.length) return;
-  sc_stepIdx=i;
-  // Update stepper button active states
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
-  document.querySelectorAll('.sc-step-btn').forEach((btn,idx)=>{
-    const s=j.steps[idx];
-    const isActive=idx===i;
-    const isDone=idx<i;
-    const c=phaseCols[s.phase]||j.col;
-    const bg=phaseBgs[s.phase]||j.bg;
-    btn.style.borderColor=isActive?c:'var(--border)';
-    btn.style.background=isActive?bg:'transparent';
-    btn.style.color=isActive?c:isDone?'var(--text3)':'var(--text2)';
-    btn.style.fontWeight=isActive?'600':'400';
-  });
-  scRenderStep();
-  if(editMode) setTimeout(activateEditMode,60);
-}
-
-function scRenderStep(){
-  const _j2=SC_JOURNEYS[sc_journeyIdx];
-  if(!_j2||sc_stepIdx<0||sc_stepIdx>=_j2.steps.length) return;
-  const card=document.getElementById('sc-step-card');
-  if(!card) return;
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const s=j.steps[sc_stepIdx];
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
-  const c=phaseCols[s.phase]||j.col;
-
-  const prev=sc_stepIdx>0?`<button onclick="scGoStep(${sc_stepIdx-1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2)">← Previous</button>`:'<span></span>';
-  const next=sc_stepIdx<j.steps.length-1?`<button onclick="scGoStep(${sc_stepIdx+1})" style="padding:6px 14px;border-radius:8px;border:none;background:${c};cursor:pointer;font-size:12px;color:#fff;font-weight:500">Next →</button>`:'<span style="font-size:12px;color:var(--text3);padding:6px 0">End of journey</span>';
-
-  card.innerHTML=`
-  <div class="sc-head">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${c};background:${j.bg};padding:3px 9px;border-radius:8px">${phaseLabel[s.phase]||s.phase}</span>
-      <span style="font-size:12px;color:var(--text3)">${sc_stepIdx+1} of ${j.steps.length}</span>
-    </div>
-    <div class="sc-title">${s.name}</div>
-  </div>
-  <div class="sc-body">${scStepHTML(s,c)}</div>
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;border-top:1px solid var(--border)">${prev}${next}</div>`;
-}
-
-
-function svgBox(x,y,w,h,rx,fill,stroke,label1,label2,onclick){
-  const clickAttr=onclick?` onclick="${onclick}" style="cursor:pointer"`:'';
-  const t1=`<text x="${x+w/2}" y="${label2?y+h*0.38:y+h/2}" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="${stroke}">${label1}</text>`;
-  const t2=label2?`<text x="${x+w/2}" y="${y+h*0.68}" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="11" fill="${stroke}" opacity="0.75">${label2}</text>`:'';
-  return`<g${clickAttr}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="1"/>${t1}${t2}</g>`;
-}
-function svgTxt(x,y,txt,size,fill,anchor,opacity){
-  return`<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-family="system-ui,sans-serif" font-size="${size||12}" fill="${fill||'#555'}" opacity="${opacity||1}">${txt}</text>`;
-}
-function scStepHTML(st,c){
-  let h=`<div class="sc-what">${st.title}</div><div class="sc-desc">${st.desc}</div>`;
-  if(st.rules)h+=`<div class="rules-list">`+st.rules.map((r,i)=>`<div class="sc-rule"><span class="sc-rule-num" style="color:${c}">${i+1}</span><span class="sc-rule-text">${r}</span></div>`).join('')+`</div>`;
-  if(st.fmt)h+=`<div class="fmt-grid2">
-    <div class="fmt-c"><span class="fmt-tag" style="background:#E6F1FB;color:#0C447C">20–30 min</span><div class="fmt-title">Discovery call</div><div class="fmt-det">No deck. Qualify and listen. Close for a formal meeting with a date.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#E1F5EE;color:#085041">45–90 min</span><div class="fmt-title">First formal meeting</div><div class="fmt-det">Optional deck. Bring one-pager. Close for proposal or next meeting.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#EEEDFE;color:#3C3489">60–120 min</span><div class="fmt-title">Board / committee pitch</div><div class="fmt-det">Full deck. Multiple leave-behinds. Close for proposal review date.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#FAEEDA;color:#633806">Open</span><div class="fmt-title">Informal / social</div><div class="fmt-det">No deck. Relationship first. Close for a follow-up call within 2 weeks.</div></div>
-  </div>`;
-  if(st.warn)h+=`<div class="sc-warn">${st.warn}</div>`;
-  if(st.good)h+=`<div class="sc-good">${st.good}</div>`;
-  if(st.info)h+=`<div class="sc-info">${st.info}</div>`;
-  if(st.branches)h+=`<div class="br-grid">${st.branches.map(b=>{
-    const bg={good:'var(--bg2)',neutral:'var(--bg3)',warn:'#fff5f5'};
-    const bd={good:'var(--border)',neutral:'var(--border2)',warn:'#fdd'};
-    const tx={good:c,neutral:'var(--text3)',warn:'#c03030'};
-    return`<div class="br-item" style="background:${bg[b.type]};border:0.5px solid ${bd[b.type]}"><strong style="color:${tx[b.type]}">${b.label}</strong><span style="color:var(--text2)">${b.text}</span></div>`;
-  }).join('')}</div>`;
-  if(st.objections)h+=`<div class="obj-stack">${st.objections.map(o=>`
-    <div class="obj-row">
-      <div class="obj-q"><div class="obj-lbl">They say</div>${o.q}</div>
-      <div class="obj-a"><div class="obj-lbl" style="color:${c}">You say</div>${o.a}</div>
-    </div>`).join('')}</div>`;
-  return h;
-}
-
-
-function scRenderMap(){
-  const BL='#E6F1FB',BS='#185FA5',BT='#0C447C';
-  const TL='#E1F5EE',TS='#0F6E56',TT='#085041';
-  const AL='#FFF8EC',AS='#854F0B',AT='#633806';
-  const CL='#FAECE7',CS='#993C1D',CT='#712B13';
-  const PL='#EEEDFE',PS='#534AB7',PT='#3C3489';
-  const GL='#F1EFE8',GS='#5F5E5A',GT='#2C2C2A';
-  const RL='#FCEBEB',RS='#A32D2D',RT='#501313';
-  const GN='#E1F5EE',GNS='#0F6E56';
-  const NK='#888';
-  document.getElementById('sc-map').innerHTML=`
-  <div style="overflow-x:auto;border-radius:10px;border:1px solid #e0e8ec;background:#fff;padding:16px">
-  <svg width="100%" viewBox="0 0 680 760" style="display:block;min-width:580px;font-family:system-ui,sans-serif">
-  <defs>
-    <marker id="marr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${NK}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${BS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${TS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${AS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${CS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${PS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-  </defs>
-  ${svgBox(20,14,148,50,8,BL,BS,'We reach out','You initiate',"scSetEP(0);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(184,14,148,50,8,TL,TS,'They come to us','They initiate',"scSetEP(1);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(348,14,148,50,8,AL,AS,'Warm intro','Mutual contact',"scSetEP(2);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(512,14,148,50,8,CL,CS,'Live encounter','In the room',"scSetEP(3);scSetView('guide');scSetSubview('entry')")}
-
-  <line x1="94" y1="64" x2="94" y2="90" stroke="${BS}" stroke-width="1.5" marker-end="url(#marrB)"/>
-  <line x1="258" y1="64" x2="258" y2="90" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="64" x2="422" y2="90" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="586" y1="64" x2="586" y2="90" stroke="${CS}" stroke-width="1.5" marker-end="url(#marrC)"/>
-  ${svgBox(20,90,148,44,6,BL,BS,'Research target','Persona + country')}
-  ${svgBox(184,90,148,44,6,TL,TS,'Respond within 4 hrs','Qualify + propose call')}
-  ${svgBox(348,90,148,44,6,AL,AS,'Thank connector','Within 2 hours')}
-  ${svgBox(512,90,148,44,6,CL,CS,'Read the room','Listen before pitching')}
-
-  <line x1="94" y1="134" x2="94" y2="158" stroke="${BS}" stroke-width="1.5" marker-end="url(#marrB)"/>
-  <line x1="258" y1="134" x2="258" y2="158" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="134" x2="422" y2="158" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="586" y1="134" x2="586" y2="158" stroke="${CS}" stroke-width="1.5" marker-end="url(#marrC)"/>
-  ${svgBox(20,158,148,44,6,BL,BS,'Draft outreach','Email or LinkedIn')}
-  ${svgBox(184,158,148,44,6,TL,TS,'Prep + book meeting','Within 48 hours')}
-  ${svgBox(348,158,148,44,6,AL,AS,'Reply to intro thread','Propose short call')}
-  ${svgBox(512,158,148,44,6,CL,CS,'30-second pitch','Problem first, always')}
-  ${svgTxt(94,220,'Response?',11,'#888')}
-  ${svgTxt(258,220,'Fit level?',11,'#888')}
-  ${svgTxt(422,220,'Discovery call',11,'#888')}
-  ${svgTxt(586,220,'Interest?',11,'#888')}
-
-  <line x1="94" y1="202" x2="94" y2="226" stroke="${BS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="258" y1="202" x2="258" y2="226" stroke="${TS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="422" y1="202" x2="422" y2="226" stroke="${AS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="586" y1="202" x2="586" y2="226" stroke="${CS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  ${svgBox(20,226,68,34,5,GN,GNS,'Replied','')}
-  ${svgBox(100,226,68,34,5,GL,GS,'Silence','')}
-  ${svgBox(184,226,68,34,5,GN,GNS,'Strong','')}
-  ${svgBox(264,226,68,34,5,GL,GS,'Unclear','')}
-  ${svgBox(348,226,148,34,5,GN,GNS,'Qualify → book meeting','')}
-  ${svgBox(512,226,68,34,5,GN,GNS,'Interested','')}
-  ${svgBox(592,226,68,34,5,GL,GS,'Not now','')}
-
-  <path d="M94 202 L54 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M94 202 L134 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-  <path d="M258 202 L218 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M258 202 L298 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-  <line x1="422" y1="202" x2="422" y2="226" stroke="${AS}" stroke-width="1" marker-end="url(#marrA)"/>
-  <path d="M586 202 L546 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M586 202 L626 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-
-  ${svgTxt(134,274,'Nudge ×2',10,'#aaa')}
-  ${svgTxt(134,286,'then park',10,'#aaa')}
-  <line x1="54" y1="260" x2="54" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="218" y1="260" x2="218" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="260" x2="422" y2="322" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="546" y1="260" x2="546" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <path d="M54 322 L54 338 L546 338 L546 322" fill="none" stroke="${NK}" stroke-width="0.5" stroke-dasharray="4 3"/>
-  <line x1="300" y1="338" x2="300" y2="356" stroke="${NK}" stroke-width="1.5" marker-end="url(#marr)"/>
-  ${svgBox(140,356,320,56,8,PL,PS,'The meeting flow','Before · During · After — click to open',"scSetSubview('meeting');scSetView('guide')")}
-
-  <line x1="300" y1="412" x2="300" y2="434" stroke="${PS}" stroke-width="1.5" marker-end="url(#marrP)"/>
-  ${svgBox(50,434,160,52,6,BL,BS,'Before','Prep persona + format',"scSetMFStage(0);scSetSubview('meeting');scSetView('guide')")}
-  ${svgBox(236,434,128,52,6,PL,PS,'During','Open → close',"scSetMFStage(1);scSetSubview('meeting');scSetView('guide')")}
-  ${svgBox(380,434,160,52,6,TL,TS,'After','Day 1 · 5 · 14 · 30',"scSetMFStage(2);scSetSubview('meeting');scSetView('guide')")}
-
-  <path d="M300 434 L130 434" fill="none" stroke="${NK}" stroke-width="0.5"/>
-  <path d="M300 434 L460 434" fill="none" stroke="${NK}" stroke-width="0.5"/>
-  <line x1="460" y1="486" x2="460" y2="506" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  ${svgBox(140,506,320,44,6,GL,GS,'Follow-up cadence','Day 1 → 5 → 14 → 30 → park or close')}
-  ${svgBox(490,506,170,44,6,RL,RS,'Objection raised?','8 responses in During tab')}
-  ${svgTxt(300,578,'Meeting formats',11,'#aaa')}
-  ${svgBox(20,586,146,34,5,GL,GS,'Discovery 20–30 min','')}
-  ${svgBox(178,586,146,34,5,GL,GS,'Formal 45–90 min','')}
-  ${svgBox(336,586,146,34,5,GL,GS,'Board pitch 60–120 min','')}
-  ${svgBox(494,586,146,34,5,GL,GS,'Informal / social','')}
-  <rect x="20" y="652" width="10" height="10" rx="2" fill="${BL}" stroke="${BS}" stroke-width="1"/>
-  ${svgTxt(36,660,'We reach out',11,'#444','start')}
-  <rect x="130" y="652" width="10" height="10" rx="2" fill="${TL}" stroke="${TS}" stroke-width="1"/>
-  ${svgTxt(146,660,'They come to us',11,'#444','start')}
-  <rect x="266" y="652" width="10" height="10" rx="2" fill="${AL}" stroke="${AS}" stroke-width="1"/>
-  ${svgTxt(282,660,'Warm intro',11,'#444','start')}
-  <rect x="368" y="652" width="10" height="10" rx="2" fill="${CL}" stroke="${CS}" stroke-width="1"/>
-  ${svgTxt(384,660,'Live encounter',11,'#444','start')}
-  <rect x="474" y="652" width="10" height="10" rx="2" fill="${PL}" stroke="${PS}" stroke-width="1"/>
-  ${svgTxt(490,660,'Meeting stages',11,'#444','start')}
-  ${svgTxt(660,660,'click any block to open guide',10,'#bbb','end')}
-  </svg></div>`;
-}
 
 renderStrategic();
 
@@ -1935,58 +1653,69 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── MICROSOFT GRAPH — SAVE TO ONEDRIVE ──
-const MSAL_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const MSAL_AUTHORITY = 'https://login.microsoftonline.com/organizations';
-const MSAL_SCOPES = ['https://youthtoprofessionals.sharepoint.com/AllSites.Write', 'User.Read'];
-let _msalToken = null;
-let _oneDriveFileName = null;
+// ── SAVE TO SHAREPOINT VIA REST API ──
+const SP_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
+const SP_TENANT = 'youthtoprofessionals.sharepoint.com';
+const SP_SITE = '/sites/Directory';
+const SP_FILE_PATH = '/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html';
+const SP_RESOURCE = 'https://youthtoprofessionals.sharepoint.com';
+const REDIRECT_URI = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
 
-async function getOneDriveToken() {
-  // Use MSAL implicit flow via redirect
-  // Check if we already have a token in sessionStorage
-  const cached = sessionStorage.getItem('yt_msal_token');
-  const cachedExp = sessionStorage.getItem('yt_msal_exp');
+async function getSharePointToken() {
+  // Check sessionStorage cache
+  const cached = sessionStorage.getItem('sp_token');
+  const cachedExp = sessionStorage.getItem('sp_token_exp');
   if (cached && cachedExp && Date.now() < parseInt(cachedExp)) {
     return cached;
   }
 
-  // Check URL hash for token (after redirect back)
+  // Check URL hash for returned token
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.replace('#','?').slice(1));
+    const params = new URLSearchParams(hash.replace(/^#/,''));
     const token = params.get('access_token');
     const expiresIn = parseInt(params.get('expires_in') || '3600');
     if (token) {
-      sessionStorage.setItem('yt_msal_token', token);
-      sessionStorage.setItem('yt_msal_exp', Date.now() + expiresIn * 1000 - 60000);
+      sessionStorage.setItem('sp_token', token);
+      sessionStorage.setItem('sp_token_exp', String(Date.now() + expiresIn * 1000 - 60000));
+      // Restore any pending save state
+      const pending = sessionStorage.getItem('sp_pending_save');
+      if (pending) {
+        sessionStorage.removeItem('sp_pending_save');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return token;
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
       return token;
     }
   }
 
-  // Need to authenticate — redirect to Microsoft login
-  const redirectUri = encodeURIComponent('https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html');
-  const scope = encodeURIComponent(MSAL_SCOPES.join(' '));
-  const state = encodeURIComponent(JSON.stringify({action:'save'}));
-  const authUrl = `${MSAL_AUTHORITY}/oauth2/v2.0/authorize?client_id=${MSAL_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_mode=fragment`;
+  // Redirect to Microsoft login with SharePoint resource
+  sessionStorage.setItem('sp_pending_save', '1');
+  const authUrl = 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'
+    + '?client_id=' + SP_CLIENT_ID
+    + '&response_type=token'
+    + '&redirect_uri=' + encodeURIComponent(REDIRECT_URI)
+    + '&scope=' + encodeURIComponent(SP_RESOURCE + '/AllSites.Write ' + SP_RESOURCE + '/AllSites.Read')
+    + '&response_mode=fragment'
+    + '&prompt=select_account';
   window.location.href = authUrl;
   return null;
 }
 
-async function saveToOneDrive() {
+async function saveToSharePoint() {
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '';
+  const origText = btn ? btn.textContent : '↑ Save to OneDrive';
 
   try {
     if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
 
-    const token = await getOneDriveToken();
-    if (!token) return; // redirecting to login
+    const token = await getSharePointToken();
+    if (!token) return; // redirecting
 
     if (btn) btn.textContent = 'Saving...';
 
-    // Build the updated file content
+    // Build updated file content
     let html = _ORIGINAL_SRC;
     if (!html) {
       const el = document.getElementById('_src');
@@ -1995,349 +1724,56 @@ async function saveToOneDrive() {
     }
     if (!html) { alert('Source not available. Please reload.'); return; }
 
-    // Update data in the file
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
     html = repObj(html, 'STRATEGIC', STRATEGIC);
 
-    // Rebuild textarea content
-    const escapedHtml = html.replace(/<\/textarea>/g, '<\\/textarea>');
-    const newSrc = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m, open, close) { return open + escapedHtml + close; });
+    // Rebuild textarea
+    const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
+    const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
+      function(m, open, close) { return open + escaped + close; }) || html;
 
-    const fileContent = newSrc || html;
-
-    // Find the file in OneDrive — search by name
-    if (!_oneDriveFileName) {
-      // Get the current filename from the page URL or use default
-      _oneDriveFileName = 'YouthToPro_BD_Toolkit_v2.html';
-    }
-
-    // Upload to OneDrive root — uses the simple upload API
-    const uploadUrl = `https://graph.microsoft.com/v1.0/sites/youthtoprofessionals.sharepoint.com:/sites/Directory:/drive/root:/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html:/content`;
+    // Upload via SharePoint REST API
+    const folderPath = '/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit';
+    const uploadUrl = 'https://' + SP_TENANT + SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('" + folderPath + "')/Files/add(url='YouthToPro_BD_Toolkit_v2.html',overwrite=true)";
 
     const response = await fetch(uploadUrl, {
-      method: 'PUT',
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'text/html',
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json;odata=verbose',
+        'Content-Type': 'application/octet-stream',
+        'X-RequestDigest': 'undefined'
       },
       body: fileContent
     });
 
     if (response.ok) {
-      const data = await response.json();
       if (btn) { btn.textContent = '✓ Saved'; btn.style.background = '#347969'; }
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
       showToast();
     } else {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Save failed');
+      const errText = await response.text();
+      throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
     }
 
   } catch(e) {
-    console.error('OneDrive save error:', e);
-    if (btn) { btn.textContent = '✗ Failed — retry'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => {
-      if (btn) { btn.textContent = origText; btn.style.background = ''; }
-    }, 4000);
-    alert('Save failed: ' + e.message + '\n\nMake sure you are signed in to OneDrive and have edit access to this file.');
+    console.error('SharePoint save error:', e);
+    if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
+    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; } }, 4000);
+    alert('Save failed: ' + e.message + '\n\nCheck console for details.');
   }
 }
 
-function renderScenarios(){
-  const el=document.getElementById('view-scenarios');
-  el.innerHTML=`<div id="sc-main"></div>`;
-  scRenderCards();
-}
+// Auto-complete save if returning from login redirect
+window.addEventListener('load', function() {
+  if (window.location.hash.includes('access_token') && sessionStorage.getItem('sp_pending_save')) {
+    setTimeout(saveToSharePoint, 500);
+  }
+});
 
-function scSetView(v){
-  sc_view=v;
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-  if(v==='journey') scRenderJourney();
-  else { sc_view='cards'; scRenderCards(); }
-}
-
-function scHover(el,col,on){
-  el.style.borderColor=on?col:'var(--border)';
-  el.style.boxShadow=on?'0 4px 20px rgba(0,0,0,0.1)':'var(--shadow)';
-}
-function scRenderCards(){
-  sc_view='cards';
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-  main.innerHTML=`
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:.5rem">
-    ${SC_JOURNEYS.map((j,i)=>`
-    <div onclick="scOpenJourney(${i})" onmouseover="scHover(this,'${j.col}',true)" onmouseout="scHover(this,'${j.col}',false)"
-      style="background:var(--bg);border-radius:var(--radius);padding:1.6rem 1.75rem;cursor:pointer;border:1px solid var(--border);transition:all .18s;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <span style="font-size:24px;color:${j.col};font-weight:300">${j.icon}</span>
-        <span style="font-size:11px;color:var(--text3);font-weight:500">${j.steps.length} steps →</span>
-      </div>
-      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px">${j.name}</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.55">${j.sub}</div>
-      <div style="margin-top:1.1rem;height:3px;border-radius:2px;background:${j.col};opacity:0.25;width:100%"></div>
-    </div>`).join('')}
-  </div>`;
-}
-
-function scOpenJourney(i){
-  sc_journeyIdx=i;
-  sc_stepIdx=0;
-  sc_view='journey';
-  scRenderJourney();
-}
-
-function scRenderJourney(){
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const main=document.getElementById('sc-main');
-  if(!main) return;
-
-  // Phase labels
-  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
-
-  // Group steps by phase for the stepper
-  let lastPhase='';
-  const stepperHTML=j.steps.map((s,i)=>{
-    const isActive=i===sc_stepIdx;
-    const isDone=i<sc_stepIdx;
-    const phaseChange=s.phase!==lastPhase;
-    lastPhase=s.phase;
-    const phasePill=phaseChange?`<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${phaseCols[s.phase]};margin-bottom:5px;padding-left:2px">${phaseLabel[s.phase]||s.phase}</div>`:'';
-    return `${phasePill}<button class="sc-step-btn" onclick="scGoStep(${i})" style="display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;border:1.5px solid ${isActive?phaseCols[s.phase]:'var(--border)'};background:${isActive?phaseBgs[s.phase]:'transparent'};cursor:pointer;margin-bottom:5px;transition:all .15s;font-size:12.5px;font-weight:${isActive?'600':'400'};color:${isActive?phaseCols[s.phase]:isDone?'var(--text3)':'var(--text2)'}">${s.name}</button>`;
-  }).join('');
-
-  const s=j.steps[sc_stepIdx];
-  const pCol=phaseCols[s.phase]||j.col;
-  const pBg=phaseBgs[s.phase]||j.bg;
-
-  main.innerHTML=`
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
-    <button onclick="scSetView('cards')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px">← Back</button>
-    <span style="font-size:15px;font-weight:600;color:${j.col}">${j.name}</span>
-    <span style="font-size:12px;color:var(--text3)">${j.sub}</span>
-  </div>
-  <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
-    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;border:1px solid var(--border)">
-      ${stepperHTML}
-    </div>
-    <div class="sc-card" id="sc-step-card"></div>
-  </div>`;
-
-  scRenderStep();
-  if(editMode) setTimeout(activateEditMode,60);
-}
-
-function scGoStep(i){
-  const _j=SC_JOURNEYS[sc_journeyIdx];
-  if(!_j||i<0||i>=_j.steps.length) return;
-  sc_stepIdx=i;
-  // Update stepper button active states
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
-  document.querySelectorAll('.sc-step-btn').forEach((btn,idx)=>{
-    const s=j.steps[idx];
-    const isActive=idx===i;
-    const isDone=idx<i;
-    const c=phaseCols[s.phase]||j.col;
-    const bg=phaseBgs[s.phase]||j.bg;
-    btn.style.borderColor=isActive?c:'var(--border)';
-    btn.style.background=isActive?bg:'transparent';
-    btn.style.color=isActive?c:isDone?'var(--text3)':'var(--text2)';
-    btn.style.fontWeight=isActive?'600':'400';
-  });
-  scRenderStep();
-  if(editMode) setTimeout(activateEditMode,60);
-}
-
-function scRenderStep(){
-  const _j2=SC_JOURNEYS[sc_journeyIdx];
-  if(!_j2||sc_stepIdx<0||sc_stepIdx>=_j2.steps.length) return;
-  const card=document.getElementById('sc-step-card');
-  if(!card) return;
-  const j=SC_JOURNEYS[sc_journeyIdx];
-  const s=j.steps[sc_stepIdx];
-  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
-  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
-  const c=phaseCols[s.phase]||j.col;
-
-  const prev=sc_stepIdx>0?`<button onclick="scGoStep(${sc_stepIdx-1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2)">← Previous</button>`:'<span></span>';
-  const next=sc_stepIdx<j.steps.length-1?`<button onclick="scGoStep(${sc_stepIdx+1})" style="padding:6px 14px;border-radius:8px;border:none;background:${c};cursor:pointer;font-size:12px;color:#fff;font-weight:500">Next →</button>`:'<span style="font-size:12px;color:var(--text3);padding:6px 0">End of journey</span>';
-
-  card.innerHTML=`
-  <div class="sc-head">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${c};background:${j.bg};padding:3px 9px;border-radius:8px">${phaseLabel[s.phase]||s.phase}</span>
-      <span style="font-size:12px;color:var(--text3)">${sc_stepIdx+1} of ${j.steps.length}</span>
-    </div>
-    <div class="sc-title">${s.name}</div>
-  </div>
-  <div class="sc-body">${scStepHTML(s,c)}</div>
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;border-top:1px solid var(--border)">${prev}${next}</div>`;
-}
-
-
-function svgBox(x,y,w,h,rx,fill,stroke,label1,label2,onclick){
-  const clickAttr=onclick?` onclick="${onclick}" style="cursor:pointer"`:'';
-  const t1=`<text x="${x+w/2}" y="${label2?y+h*0.38:y+h/2}" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="${stroke}">${label1}</text>`;
-  const t2=label2?`<text x="${x+w/2}" y="${y+h*0.68}" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif" font-size="11" fill="${stroke}" opacity="0.75">${label2}</text>`:'';
-  return`<g${clickAttr}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="1"/>${t1}${t2}</g>`;
-}
-function svgTxt(x,y,txt,size,fill,anchor,opacity){
-  return`<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-family="system-ui,sans-serif" font-size="${size||12}" fill="${fill||'#555'}" opacity="${opacity||1}">${txt}</text>`;
-}
-function scStepHTML(st,c){
-  let h=`<div class="sc-what">${st.title}</div><div class="sc-desc">${st.desc}</div>`;
-  if(st.rules)h+=`<div class="rules-list">`+st.rules.map((r,i)=>`<div class="sc-rule"><span class="sc-rule-num" style="color:${c}">${i+1}</span><span class="sc-rule-text">${r}</span></div>`).join('')+`</div>`;
-  if(st.fmt)h+=`<div class="fmt-grid2">
-    <div class="fmt-c"><span class="fmt-tag" style="background:#E6F1FB;color:#0C447C">20–30 min</span><div class="fmt-title">Discovery call</div><div class="fmt-det">No deck. Qualify and listen. Close for a formal meeting with a date.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#E1F5EE;color:#085041">45–90 min</span><div class="fmt-title">First formal meeting</div><div class="fmt-det">Optional deck. Bring one-pager. Close for proposal or next meeting.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#EEEDFE;color:#3C3489">60–120 min</span><div class="fmt-title">Board / committee pitch</div><div class="fmt-det">Full deck. Multiple leave-behinds. Close for proposal review date.</div></div>
-    <div class="fmt-c"><span class="fmt-tag" style="background:#FAEEDA;color:#633806">Open</span><div class="fmt-title">Informal / social</div><div class="fmt-det">No deck. Relationship first. Close for a follow-up call within 2 weeks.</div></div>
-  </div>`;
-  if(st.warn)h+=`<div class="sc-warn">${st.warn}</div>`;
-  if(st.good)h+=`<div class="sc-good">${st.good}</div>`;
-  if(st.info)h+=`<div class="sc-info">${st.info}</div>`;
-  if(st.branches)h+=`<div class="br-grid">${st.branches.map(b=>{
-    const bg={good:'var(--bg2)',neutral:'var(--bg3)',warn:'#fff5f5'};
-    const bd={good:'var(--border)',neutral:'var(--border2)',warn:'#fdd'};
-    const tx={good:c,neutral:'var(--text3)',warn:'#c03030'};
-    return`<div class="br-item" style="background:${bg[b.type]};border:0.5px solid ${bd[b.type]}"><strong style="color:${tx[b.type]}">${b.label}</strong><span style="color:var(--text2)">${b.text}</span></div>`;
-  }).join('')}</div>`;
-  if(st.objections)h+=`<div class="obj-stack">${st.objections.map(o=>`
-    <div class="obj-row">
-      <div class="obj-q"><div class="obj-lbl">They say</div>${o.q}</div>
-      <div class="obj-a"><div class="obj-lbl" style="color:${c}">You say</div>${o.a}</div>
-    </div>`).join('')}</div>`;
-  return h;
-}
-
-
-function scRenderMap(){
-  const BL='#E6F1FB',BS='#185FA5',BT='#0C447C';
-  const TL='#E1F5EE',TS='#0F6E56',TT='#085041';
-  const AL='#FFF8EC',AS='#854F0B',AT='#633806';
-  const CL='#FAECE7',CS='#993C1D',CT='#712B13';
-  const PL='#EEEDFE',PS='#534AB7',PT='#3C3489';
-  const GL='#F1EFE8',GS='#5F5E5A',GT='#2C2C2A';
-  const RL='#FCEBEB',RS='#A32D2D',RT='#501313';
-  const GN='#E1F5EE',GNS='#0F6E56';
-  const NK='#888';
-  document.getElementById('sc-map').innerHTML=`
-  <div style="overflow-x:auto;border-radius:10px;border:1px solid #e0e8ec;background:#fff;padding:16px">
-  <svg width="100%" viewBox="0 0 680 760" style="display:block;min-width:580px;font-family:system-ui,sans-serif">
-  <defs>
-    <marker id="marr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${NK}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${BS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${TS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${AS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${CS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-    <marker id="marrP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="${PS}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </marker>
-  </defs>
-  ${svgBox(20,14,148,50,8,BL,BS,'We reach out','You initiate',"scSetEP(0);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(184,14,148,50,8,TL,TS,'They come to us','They initiate',"scSetEP(1);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(348,14,148,50,8,AL,AS,'Warm intro','Mutual contact',"scSetEP(2);scSetView('guide');scSetSubview('entry')")}
-  ${svgBox(512,14,148,50,8,CL,CS,'Live encounter','In the room',"scSetEP(3);scSetView('guide');scSetSubview('entry')")}
-
-  <line x1="94" y1="64" x2="94" y2="90" stroke="${BS}" stroke-width="1.5" marker-end="url(#marrB)"/>
-  <line x1="258" y1="64" x2="258" y2="90" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="64" x2="422" y2="90" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="586" y1="64" x2="586" y2="90" stroke="${CS}" stroke-width="1.5" marker-end="url(#marrC)"/>
-  ${svgBox(20,90,148,44,6,BL,BS,'Research target','Persona + country')}
-  ${svgBox(184,90,148,44,6,TL,TS,'Respond within 4 hrs','Qualify + propose call')}
-  ${svgBox(348,90,148,44,6,AL,AS,'Thank connector','Within 2 hours')}
-  ${svgBox(512,90,148,44,6,CL,CS,'Read the room','Listen before pitching')}
-
-  <line x1="94" y1="134" x2="94" y2="158" stroke="${BS}" stroke-width="1.5" marker-end="url(#marrB)"/>
-  <line x1="258" y1="134" x2="258" y2="158" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="134" x2="422" y2="158" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="586" y1="134" x2="586" y2="158" stroke="${CS}" stroke-width="1.5" marker-end="url(#marrC)"/>
-  ${svgBox(20,158,148,44,6,BL,BS,'Draft outreach','Email or LinkedIn')}
-  ${svgBox(184,158,148,44,6,TL,TS,'Prep + book meeting','Within 48 hours')}
-  ${svgBox(348,158,148,44,6,AL,AS,'Reply to intro thread','Propose short call')}
-  ${svgBox(512,158,148,44,6,CL,CS,'30-second pitch','Problem first, always')}
-  ${svgTxt(94,220,'Response?',11,'#888')}
-  ${svgTxt(258,220,'Fit level?',11,'#888')}
-  ${svgTxt(422,220,'Discovery call',11,'#888')}
-  ${svgTxt(586,220,'Interest?',11,'#888')}
-
-  <line x1="94" y1="202" x2="94" y2="226" stroke="${BS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="258" y1="202" x2="258" y2="226" stroke="${TS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="422" y1="202" x2="422" y2="226" stroke="${AS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  <line x1="586" y1="202" x2="586" y2="226" stroke="${CS}" stroke-width="0.5" stroke-dasharray="3 2"/>
-  ${svgBox(20,226,68,34,5,GN,GNS,'Replied','')}
-  ${svgBox(100,226,68,34,5,GL,GS,'Silence','')}
-  ${svgBox(184,226,68,34,5,GN,GNS,'Strong','')}
-  ${svgBox(264,226,68,34,5,GL,GS,'Unclear','')}
-  ${svgBox(348,226,148,34,5,GN,GNS,'Qualify → book meeting','')}
-  ${svgBox(512,226,68,34,5,GN,GNS,'Interested','')}
-  ${svgBox(592,226,68,34,5,GL,GS,'Not now','')}
-
-  <path d="M94 202 L54 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M94 202 L134 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-  <path d="M258 202 L218 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M258 202 L298 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-  <line x1="422" y1="202" x2="422" y2="226" stroke="${AS}" stroke-width="1" marker-end="url(#marrA)"/>
-  <path d="M586 202 L546 226" fill="none" stroke="${GNS}" stroke-width="1" marker-end="url(#marrT)"/>
-  <path d="M586 202 L626 226" fill="none" stroke="${GS}" stroke-width="1" marker-end="url(#marr)"/>
-
-  ${svgTxt(134,274,'Nudge ×2',10,'#aaa')}
-  ${svgTxt(134,286,'then park',10,'#aaa')}
-  <line x1="54" y1="260" x2="54" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="218" y1="260" x2="218" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <line x1="422" y1="260" x2="422" y2="322" stroke="${AS}" stroke-width="1.5" marker-end="url(#marrA)"/>
-  <line x1="546" y1="260" x2="546" y2="322" stroke="${GNS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  <path d="M54 322 L54 338 L546 338 L546 322" fill="none" stroke="${NK}" stroke-width="0.5" stroke-dasharray="4 3"/>
-  <line x1="300" y1="338" x2="300" y2="356" stroke="${NK}" stroke-width="1.5" marker-end="url(#marr)"/>
-  ${svgBox(140,356,320,56,8,PL,PS,'The meeting flow','Before · During · After — click to open',"scSetSubview('meeting');scSetView('guide')")}
-
-  <line x1="300" y1="412" x2="300" y2="434" stroke="${PS}" stroke-width="1.5" marker-end="url(#marrP)"/>
-  ${svgBox(50,434,160,52,6,BL,BS,'Before','Prep persona + format',"scSetMFStage(0);scSetSubview('meeting');scSetView('guide')")}
-  ${svgBox(236,434,128,52,6,PL,PS,'During','Open → close',"scSetMFStage(1);scSetSubview('meeting');scSetView('guide')")}
-  ${svgBox(380,434,160,52,6,TL,TS,'After','Day 1 · 5 · 14 · 30',"scSetMFStage(2);scSetSubview('meeting');scSetView('guide')")}
-
-  <path d="M300 434 L130 434" fill="none" stroke="${NK}" stroke-width="0.5"/>
-  <path d="M300 434 L460 434" fill="none" stroke="${NK}" stroke-width="0.5"/>
-  <line x1="460" y1="486" x2="460" y2="506" stroke="${TS}" stroke-width="1.5" marker-end="url(#marrT)"/>
-  ${svgBox(140,506,320,44,6,GL,GS,'Follow-up cadence','Day 1 → 5 → 14 → 30 → park or close')}
-  ${svgBox(490,506,170,44,6,RL,RS,'Objection raised?','8 responses in During tab')}
-  ${svgTxt(300,578,'Meeting formats',11,'#aaa')}
-  ${svgBox(20,586,146,34,5,GL,GS,'Discovery 20–30 min','')}
-  ${svgBox(178,586,146,34,5,GL,GS,'Formal 45–90 min','')}
-  ${svgBox(336,586,146,34,5,GL,GS,'Board pitch 60–120 min','')}
-  ${svgBox(494,586,146,34,5,GL,GS,'Informal / social','')}
-  <rect x="20" y="652" width="10" height="10" rx="2" fill="${BL}" stroke="${BS}" stroke-width="1"/>
-  ${svgTxt(36,660,'We reach out',11,'#444','start')}
-  <rect x="130" y="652" width="10" height="10" rx="2" fill="${TL}" stroke="${TS}" stroke-width="1"/>
-  ${svgTxt(146,660,'They come to us',11,'#444','start')}
-  <rect x="266" y="652" width="10" height="10" rx="2" fill="${AL}" stroke="${AS}" stroke-width="1"/>
-  ${svgTxt(282,660,'Warm intro',11,'#444','start')}
-  <rect x="368" y="652" width="10" height="10" rx="2" fill="${CL}" stroke="${CS}" stroke-width="1"/>
-  ${svgTxt(384,660,'Live encounter',11,'#444','start')}
-  <rect x="474" y="652" width="10" height="10" rx="2" fill="${PL}" stroke="${PS}" stroke-width="1"/>
-  ${svgTxt(490,660,'Meeting stages',11,'#444','start')}
-  ${svgTxt(660,660,'click any block to open guide',10,'#bbb','end')}
-  </svg></div>`;
-}
 
 renderStrategic();
 
