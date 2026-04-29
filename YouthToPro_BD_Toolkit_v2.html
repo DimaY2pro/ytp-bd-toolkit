@@ -761,133 +761,41 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── SAVE TO GITHUB VIA GITHUB API ──
-const GH_OWNER = 'DimaY2pro';
-const GH_REPO  = 'ytp-bd-toolkit';
-const GH_FILE  = 'YouthToPro_BD_Toolkit_v2.html';
-const GH_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const GH_REDIRECT  = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
+// ── SAVE — DOWNLOAD UPDATED HTML ──
+function saveToFile(){ doSave(); }
+function saveToSharePoint(){ doSave(); }
+function saveToGitHub(){ doSave(); }
 
-function saveToFile(){ saveToGitHub(); }
-function doSave(){ saveToGitHub(); }
-function saveToSharePoint(){ saveToGitHub(); }
-
-async function getMSToken() {
-  const cached = sessionStorage.getItem('ms_token');
-  const exp    = sessionStorage.getItem('ms_token_exp');
-  if (cached && exp && Date.now() < parseInt(exp)) return cached;
-
-  const hash = window.location.hash;
-  if (hash && hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.replace(/^#/,''));
-    const token  = params.get('access_token');
-    const expIn  = parseInt(params.get('expires_in') || '3600');
-    if (token) {
-      sessionStorage.setItem('ms_token', token);
-      sessionStorage.setItem('ms_token_exp', String(Date.now() + expIn * 1000 - 60000));
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return token;
-    }
-  }
-  return null;
-}
-
-async function saveToGitHub() {
+function doSave(){
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '↑ Save';
-
+  const origText = btn ? btn.textContent : '↓ Save HTML';
   try {
-    if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
-
-    // Build updated HTML content
     let html = _ORIGINAL_SRC;
-    if (!html) {
-      const el = document.getElementById('_src');
-      if (el) _ORIGINAL_SRC = el.value;
-      html = _ORIGINAL_SRC;
-    }
-    if (!html) throw new Error('Source not available — please reload.');
+    if(!html){ const el=document.getElementById('_src'); if(el) _ORIGINAL_SRC=el.value; html=_ORIGINAL_SRC; }
+    if(!html){ alert('Source not available. Please reload.'); return; }
 
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
     html = repObj(html, 'STRATEGIC', STRATEGIC);
 
-    // Rebuild textarea
-    const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
-    const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m,o,c){ return o + escaped + c; }) || html;
+    const escaped = html.replace(/<\/textarea>/g,'<\\/textarea>');
+    const newSrc = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
+      function(m,o,c){ return o+escaped+c; })||html;
 
-    // Encode to base64
-    const b64 = btoa(unescape(encodeURIComponent(fileContent)));
+    const blob = new Blob([newSrc], {type:'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'YouthToPro_BD_Toolkit_v2.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
 
-    if (btn) btn.textContent = 'Getting token...';
-
-    // Get GitHub PAT from user (stored in sessionStorage after first entry)
-    let pat = sessionStorage.getItem('gh_pat');
-    if (!pat) {
-      const pwd = prompt('Enter management password to save:');
-      if (!pwd) { if(btn){btn.textContent=origText;btn.disabled=false;} return; }
-      // Verify password
-      const validPwd = atob('WXRwMjAyNUBCRA=='); // base64 encoded password
-      if (pwd !== validPwd) {
-        alert('Incorrect password.');
-        if(btn){btn.textContent=origText;btn.disabled=false;}
-        return;
-      }
-      pat = atob('Z2hwXzVpcjBSZllhS0w4RjFMMmlacVR5UmNrSXF3RXRqdDBndWdmeg==');
-      sessionStorage.setItem('gh_pat', pat);
-    }
-
-    if (btn) btn.textContent = 'Saving...';
-
-    // Get current file SHA (required by GitHub API to update a file)
-    const shaResp = await fetch(
-      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
-      { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' }}
-    );
-    if (!shaResp.ok) {
-      sessionStorage.removeItem('gh_pat');
-      throw new Error('Could not access GitHub repo. Check your token has "repo" scope. HTTP ' + shaResp.status);
-    }
-    const shaData = await shaResp.json();
-    const sha = shaData.sha;
-
-    // Update the file
-    const updateResp = await fetch(
-      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'token ' + pat,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: 'Update BD Toolkit content',
-          content: b64,
-          sha: sha
-        })
-      }
-    );
-
-    if (updateResp.ok) {
-      if (btn) { btn.textContent = '✓ Saved to GitHub'; btn.style.background = '#347969'; }
-      const t = document.getElementById('toast');
-      if (t) { t.className = 'toast show'; setTimeout(()=>t.className='toast', 2500); }
-      setTimeout(() => {
-        if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
-      }, 3000);
-    } else {
-      const errData = await updateResp.json();
-      sessionStorage.removeItem('gh_pat');
-      throw new Error(errData.message || 'GitHub update failed — HTTP ' + updateResp.status);
-    }
-
-  } catch(e) {
-    console.error('GitHub save error:', e);
-    if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; }}, 4000);
-    alert('Save failed: ' + e.message);
+    if(btn){ btn.textContent='✓ Downloaded'; btn.style.background='#347969'; }
+    const t=document.getElementById('toast');
+    if(t){ t.className='toast show'; setTimeout(()=>t.className='toast',2500); }
+    setTimeout(()=>{ if(btn){ btn.textContent=origText; btn.style.background=''; }},3000);
+  } catch(e){
+    alert('Save failed: '+e.message);
+    if(btn) btn.textContent=origText;
   }
 }
 
@@ -1658,133 +1566,41 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── SAVE TO GITHUB VIA GITHUB API ──
-const GH_OWNER = 'DimaY2pro';
-const GH_REPO  = 'ytp-bd-toolkit';
-const GH_FILE  = 'YouthToPro_BD_Toolkit_v2.html';
-const GH_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const GH_REDIRECT  = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
+// ── SAVE — DOWNLOAD UPDATED HTML ──
+function saveToFile(){ doSave(); }
+function saveToSharePoint(){ doSave(); }
+function saveToGitHub(){ doSave(); }
 
-function saveToFile(){ saveToGitHub(); }
-function doSave(){ saveToGitHub(); }
-function saveToSharePoint(){ saveToGitHub(); }
-
-async function getMSToken() {
-  const cached = sessionStorage.getItem('ms_token');
-  const exp    = sessionStorage.getItem('ms_token_exp');
-  if (cached && exp && Date.now() < parseInt(exp)) return cached;
-
-  const hash = window.location.hash;
-  if (hash && hash.includes('access_token')) {
-    const params = new URLSearchParams(hash.replace(/^#/,''));
-    const token  = params.get('access_token');
-    const expIn  = parseInt(params.get('expires_in') || '3600');
-    if (token) {
-      sessionStorage.setItem('ms_token', token);
-      sessionStorage.setItem('ms_token_exp', String(Date.now() + expIn * 1000 - 60000));
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return token;
-    }
-  }
-  return null;
-}
-
-async function saveToGitHub() {
+function doSave(){
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '↑ Save';
-
+  const origText = btn ? btn.textContent : '↓ Save HTML';
   try {
-    if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
-
-    // Build updated HTML content
     let html = _ORIGINAL_SRC;
-    if (!html) {
-      const el = document.getElementById('_src');
-      if (el) _ORIGINAL_SRC = el.value;
-      html = _ORIGINAL_SRC;
-    }
-    if (!html) throw new Error('Source not available — please reload.');
+    if(!html){ const el=document.getElementById('_src'); if(el) _ORIGINAL_SRC=el.value; html=_ORIGINAL_SRC; }
+    if(!html){ alert('Source not available. Please reload.'); return; }
 
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
     html = repObj(html, 'STRATEGIC', STRATEGIC);
 
-    // Rebuild textarea
-    const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
-    const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m,o,c){ return o + escaped + c; }) || html;
+    const escaped = html.replace(/<\/textarea>/g,'<\\/textarea>');
+    const newSrc = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
+      function(m,o,c){ return o+escaped+c; })||html;
 
-    // Encode to base64
-    const b64 = btoa(unescape(encodeURIComponent(fileContent)));
+    const blob = new Blob([newSrc], {type:'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'YouthToPro_BD_Toolkit_v2.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
 
-    if (btn) btn.textContent = 'Getting token...';
-
-    // Get GitHub PAT from user (stored in sessionStorage after first entry)
-    let pat = sessionStorage.getItem('gh_pat');
-    if (!pat) {
-      const pwd = prompt('Enter management password to save:');
-      if (!pwd) { if(btn){btn.textContent=origText;btn.disabled=false;} return; }
-      // Verify password
-      const validPwd = atob('WXRwMjAyNUBCRA=='); // base64 encoded password
-      if (pwd !== validPwd) {
-        alert('Incorrect password.');
-        if(btn){btn.textContent=origText;btn.disabled=false;}
-        return;
-      }
-      pat = atob('Z2hwXzVpcjBSZllhS0w4RjFMMmlacVR5UmNrSXF3RXRqdDBndWdmeg==');
-      sessionStorage.setItem('gh_pat', pat);
-    }
-
-    if (btn) btn.textContent = 'Saving...';
-
-    // Get current file SHA (required by GitHub API to update a file)
-    const shaResp = await fetch(
-      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
-      { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' }}
-    );
-    if (!shaResp.ok) {
-      sessionStorage.removeItem('gh_pat');
-      throw new Error('Could not access GitHub repo. Check your token has "repo" scope. HTTP ' + shaResp.status);
-    }
-    const shaData = await shaResp.json();
-    const sha = shaData.sha;
-
-    // Update the file
-    const updateResp = await fetch(
-      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'token ' + pat,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: 'Update BD Toolkit content',
-          content: b64,
-          sha: sha
-        })
-      }
-    );
-
-    if (updateResp.ok) {
-      if (btn) { btn.textContent = '✓ Saved to GitHub'; btn.style.background = '#347969'; }
-      const t = document.getElementById('toast');
-      if (t) { t.className = 'toast show'; setTimeout(()=>t.className='toast', 2500); }
-      setTimeout(() => {
-        if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
-      }, 3000);
-    } else {
-      const errData = await updateResp.json();
-      sessionStorage.removeItem('gh_pat');
-      throw new Error(errData.message || 'GitHub update failed — HTTP ' + updateResp.status);
-    }
-
-  } catch(e) {
-    console.error('GitHub save error:', e);
-    if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; }}, 4000);
-    alert('Save failed: ' + e.message);
+    if(btn){ btn.textContent='✓ Downloaded'; btn.style.background='#347969'; }
+    const t=document.getElementById('toast');
+    if(t){ t.className='toast show'; setTimeout(()=>t.className='toast',2500); }
+    setTimeout(()=>{ if(btn){ btn.textContent=origText; btn.style.background=''; }},3000);
+  } catch(e){
+    alert('Save failed: '+e.message);
+    if(btn) btn.textContent=origText;
   }
 }
 
