@@ -200,13 +200,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <div class="topbar-tag">Business Development Toolkit</div>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost" onclick="toggleEdit()" id="editBtn">✏️ Edit mode</button>
-    <button class="btn btn-save" onclick="saveToFile()">⬇ Save HTML</button>
+    
+    
   </div>
 </div>
 <div class="edit-bar" id="editBar">
   <strong>Edit mode on</strong> — click any text to edit directly. Hit Save HTML when done.
-  <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="toggleEdit()">Done</button>
+  
 </div>
 <div class="main">
   <div class="topnav">
@@ -226,7 +226,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <p>Downloads a new HTML file with all your edits baked in. Open in any browser — no internet needed.</p>
     <div class="modal-actions">
       <button class="btn" style="background:var(--bg3);color:var(--text2);border:none" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-save" onclick="doSave()">Download</button>
+      
     </div>
   </div>
 </div>
@@ -646,6 +646,416 @@ function renderTemplates(){
 }
 
 function setTplIdx(i){ tplIdx=i; renderTemplates(); if(editMode) setTimeout(activateEditMode,60); }
+
+
+const SC_JOURNEYS=[
+{
+  name:"We reach out",
+  sub:"You identified them — they don't know you yet",
+  col:"#183B68",bg:"#E6F1FB",icon:"→",
+  desc:"The highest-effort entry point — and the one where preparation makes the biggest difference. You control the narrative completely. Success at this stage means a reply and a conversation, not a commitment.",
+  steps:[
+    {phase:"outreach",name:"Research",title:"Arrive knowing more than they expect",
+     desc:"Before any contact, invest 20 minutes in genuine research. The goal is to find one specific, relevant connection between their world and YouthToPro — something that makes the outreach feel considered rather than broadcast.",
+     rules:["The persona card gives you their language, their drivers, and what to avoid — worth reviewing before anything else","Finding the right person by name matters more than the perfect message — Program Officer, CSR Manager, VP Student Affairs","One specific hook — a recent initiative, a stated priority, a country focus — is worth more than a detailed description of YouthToPro"],
+     links:["Partner research brief","Persona cards","Country notes"]},
+    {phase:"outreach",name:"Draft & send",title:"Short, specific, and one clear ask",
+     desc:"The most effective cold outreach is brief. Three sentences that connect their world to the problem, and one simple ask — a 20-minute conversation, not a full presentation.",
+     rules:["The subject line should reflect their language and priorities, not YouthToPro's name","A deck attached to a first message signals you haven't qualified them yet — hold it back","One ask only — a specific time or a simple yes/no — keeps the path forward clear"],
+     branches:[{label:"They replied",type:"good",text:"Respond within a few hours — momentum matters at this stage"},{label:"No response at day 5",type:"neutral",text:"One follow-up with a fresh angle or a relevant data point"},{label:"No response at day 14",type:"warn",text:"A final note, then park — add to the quarterly re-engagement list"},{label:"Not interested",type:"warn",text:"Thank them warmly and leave the door open — circumstances change"}],
+     links:["Cold outreach templates","Pitch selection guide"]},
+    {phase:"outreach",name:"Discovery call",title:"Listen more than you speak",
+     desc:"This call is about understanding their world well enough to know whether YouthToPro genuinely fits — and whether they are worth a formal meeting. You are qualifying them as much as they are evaluating you.",
+     rules:["A question about their current priorities opens the conversation far better than a YouthToPro introduction","The first ten minutes belong to them — the pitch comes in the last five","Close with one specific proposal: a formal session with their team, a date, a name"],
+     links:["3-min pitch script","Objection handling card"]},
+    {phase:"meeting",name:"Before the meeting",title:"Prepare as if you reached out cold — because you did",
+     desc:"Starting cold means you carry a slightly lower trust baseline into the room. The preparation is how you close that gap before the meeting begins. Know exactly what you are closing for before you walk in.",
+     rules:["The persona card, their recent news, and one specific reference point — those three things are the minimum","Decide your close in advance: a proposal review date, a pilot discussion, a follow-up meeting — not a vague next step","Prepare for the two most likely objections for this persona type — you should never be surprised in the room"],
+     links:["Persona cards","Meeting prep checklist","Pitch deck"]},
+    {phase:"meeting",name:"During — opening",title:"The first ten minutes belong to them",
+     desc:"Resist the urge to open with YouthToPro. A genuine question about their current thinking — and genuine listening — tells you everything you need to tailor the next 30 minutes.",
+     rules:["Something like: 'Before I share what we do — what is your current thinking on graduate employment in your context?' works consistently","What they say in the first ten minutes determines which pillar to lead with, which proof point lands, which objection is coming","Taking notes visibly signals you are listening — and gives you material for a more specific Day 1 follow-up"],
+     warn:"A pitch in the first two minutes of a cold meeting almost always closes doors before they open.",
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"Connect their world to the problem — then to the solution",
+     desc:"Build the case using the four-pillar structure, in the sequence and language that matches what they just told you. You are drawing connections for a specific person, not delivering a slide.",
+     rules:["Bridge naturally: 'That is exactly the gap YouthToPro was built to address'","Use the data point most relevant to what they said — Jordan's 46% if they mentioned Jordan, national employment if they mentioned policy","The partnership ask always comes last — and it is always framed as selection, not solicitation"],
+     links:["3-min script","Pitch deck","Persona cards"]},
+    {phase:"meeting",name:"During — objections",title:"An objection is engagement — treat it that way",
+     desc:"An objection from a cold contact means they are still in the conversation. The four-step approach keeps the response structured without feeling defensive.",
+     rules:["Acknowledge first — 'That is a fair point, and we hear it often' — before anything else","Reframe the frame, not the person","Anchor with a specific proof point, not a general claim","Return to the forward conversation — objections are not the destination"],
+     objections:[
+       {q:`"How do we know this actually works?"`,a:"Our 60% employment conversion rate is tracked every cohort across 8+ countries. We can share anonymised outcome data from previous cycles — the numbers are documented, not estimated."},
+       {q:`"We don't have budget right now."`,a:"The budget conversation doesn't need to happen today. Let's establish whether the fit is there first — several of our strongest partnerships started as unfunded conversations."},
+       {q:`"You're not established enough."`,a:"We have +200 mentors, active programmes in 8+ countries, and a 60% placement rate tracked every cohort. Happy to walk through the programme architecture if that would be useful."},
+       {q:`"Can you send me more information?"`,a:"Of course — what would be most useful for your specific context? That helps me send something relevant rather than a generic pack."},
+       {q:`"We need to discuss internally."`,a:"Completely understood. What are the one or two questions your team would most want answered? I can prepare a brief that addresses those specifically."},
+       {q:`"We already have something similar."`,a:"What does yours focus on? That context helps me tell you quickly whether there is genuine overlap or a complementary angle worth exploring."},
+       {q:`"This isn't a priority right now."`,a:"When does your next planning cycle begin? It is worth having this conversation at the right moment rather than rushing it into the wrong one."},
+       {q:`"I'm not the right person."`,a:"Who would be? I am happy to prepare a brief specifically for that conversation."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"Leave with something specific — a date, a name, a next step",
+     desc:"The close from a cold meeting is not about a commitment. It is about a clear, named, dated next step that keeps the conversation moving without requiring a decision today.",
+     rules:["Something like: 'Based on what you have shared, I would like to propose [specific next step] — does [date] work?' gives them something concrete to respond to","Avoid ending with 'let me know what you think' — that is not a close, it is an exit","If they hesitate: offer two options rather than one open question"],
+     good:"A specific next step agreed in the room is the win from a cold start.",
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"More than a thank you — a continuation",
+     desc:"Send within 24 hours. From a cold meeting, this note does real work — it reinforces credibility and moves the conversation forward while the memory is fresh.",
+     rules:["Reference two or three specific things they said — it proves you were listening, not just presenting","Restate the value in their language, not YouthToPro's standard messaging","Confirm the agreed next step with the exact date"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"A focused check-in, not a chase",
+     desc:"One focused sentence referencing the specific next step. No re-pitch, no new attachments.",
+     rules:["'Following up on [specific next step] — does [date] still work for you?' is sufficient","If they adjust the timeline, reset the date and update the tracker"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Day 14",title:"Something of value — not another ask",
+     desc:"If there has been no response, a piece of genuine value keeps the relationship alive without pressure. A cold contact needs more relationship capital before they respond to a direct ask.",
+     rules:["A relevant data point, a cohort outcome, or something that connects to what they raised in the meeting","No ask in this message — the relationship is the ask at this stage","Distinguishes YouthToPro from every organisation that sent one email and disappeared"],
+     info:"Day 14 is about presence, not pressure.",
+     links:["Pipeline tracker"]},
+    {phase:"after",name:"Day 30",title:"A direct question — then park",
+     desc:"One final message that makes it easy to respond in any direction. After this, quarterly re-engagement.",
+     rules:["'I want to respect your time — is this still worth exploring, or should we reconnect at a better moment?' gives them three easy responses","A yes, a no, and a not yet are all useful — silence is the only unhelpful outcome","Park with context: note why they went quiet and when to re-engage"],
+     warn:"Persistence is professional. Pressure is not.",
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+},
+{
+  name:"They come to us",
+  sub:"They reached out first — highest-quality lead",
+  col:"#347969",bg:"#E1F5EE",icon:"←",
+  desc:"The highest-quality lead type — intent is already present. The job here is to qualify quickly, respond well, and guide the conversation into a structured next step before the interest cools.",
+  steps:[
+    {phase:"outreach",name:"Respond fast",title:"Reply within a few hours — interest moves quickly",
+     desc:"Someone came to you. That is rare and worth treating with care. One genuine question to understand what prompted their interest, and one proposed time for a short call — nothing more.",
+     rules:["'What prompted your interest?' tells you the entry point, the urgency, and the right angle — ask it every time","A 20-minute call within three business days is the right next step — not a vague 'let's connect'","If the enquiry is unclear, the universal one-pager and a call proposal is the right response"],
+     branches:[{label:"Clear fit",type:"good",text:"Book the meeting quickly — treat with the same care as a warm introduction"},{label:"Unclear fit",type:"neutral",text:"Clarifying question plus one-pager, call proposed within five days"},{label:"Wrong fit",type:"warn",text:"A graceful, warm redirect — the right response now builds goodwill for later"}],
+     links:["Universal one-pager","Follow-up email template"]},
+    {phase:"outreach",name:"Prep meeting",title:"They chose you — now earn it",
+     desc:"An inbound contact has done half the work. The preparation bar does not drop because they came to you — if anything, it rises.",
+     rules:["Load the persona card and understand what specifically would matter to this type in their context","Find out who else will be in the meeting — there may be multiple decision-makers in the room","Prepare for two scenarios: they want to move quickly, and they want more information first"],
+     links:["Persona cards","Meeting prep checklist","Pitch deck"]},
+    {phase:"meeting",name:"Before the meeting",title:"Inbound interest is not a substitute for preparation",
+     desc:"Research them as thoroughly as you would any outreach target. The difference is your starting credibility — not your preparation standard.",
+     rules:["What prompted their interest? If you do not already know, find out — the timing reveals the real opportunity","Review the persona card for what specifically would matter to this type in this context","Prepare both scenarios: they want to move fast, and they want to understand more first"],
+     links:["Persona cards","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Start with what brought them here",
+     desc:"The opening question shifts slightly for an inbound meeting — it starts with their reason and their timing, not the problem.",
+     rules:["'What made you reach out at this particular moment?' — the timing tells you the real opportunity","Confirm what success looks like for them before you present anything","The four-pillar structure still applies — but begin from where their interest sits, not from Pillar 1"],
+     good:"An inbound contact has already made a mental commitment to explore this. A good opening question deepens that rather than starting from scratch.",
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"Build from their interest outward",
+     desc:"You know why they came. Start from that point — not from the beginning. If they came because of the placement rate, open there. If they came because of a country connection, open there.",
+     rules:["Mirror the language from their enquiry — it signals you listened before they arrived","The partnership ask can come earlier in an inbound meeting — they are already warm to the idea","Be direct about what you want from the meeting: a clear next step before you leave"],
+     links:["Persona cards","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Objections here are refinements, not resistance",
+     desc:"An inbound contact who raises an objection is not pushing back — they are testing the logic before they commit. Treat it as due diligence.",
+     rules:["Acknowledge without surprise — they came to you, so their questions come from curiosity, not scepticism","Reframe with confidence — you earned this meeting","Anchor the proof to what attracted them in the first place","Use the objection as a natural ramp into the next step"],
+     objections:[
+       {q:`"We need to involve more people before deciding."`,a:"Of course. Who else should be part of this conversation? I can prepare materials tailored to their questions — or join the follow-up meeting directly if that would help."},
+       {q:`"We are still evaluating a few options."`,a:"That makes complete sense. What are the one or two things that will matter most in your evaluation? I want to make sure we address those directly."},
+       {q:`"Can you send us a formal proposal?"`,a:"Absolutely. Before I do — what should the proposal specifically address? I want it to answer the right questions, not just describe the programme."},
+       {q:`"We need stronger proof of impact."`,a:"We have full outcome data from every cohort we have run. I can share the anonymised reports today — which metrics matter most for your evaluation?"},
+       {q:`"The timing might not work for this cycle."`,a:"When does your next cycle begin? It is worth structuring this conversation around the right moment rather than the current one."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"You can close more ambitiously — they are already warm",
+     desc:"An inbound meeting can aim higher than a cold meeting close. A proposal review, an MoU discussion, or a cohort timeline is a more appropriate close than simply scheduling another call.",
+     rules:["'Based on what you have shared, I would like to propose [specific next step] — does [date] work?'","The close can be more substantive: a proposal review, a pilot discussion, a partnership framework conversation","If they agree to a next step in the room — confirm it in writing before the meeting ends"],
+     good:"Inbound contacts convert faster. Do not under-close when the meeting has gone well.",
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"Substance on Day 1 — not just a thank you",
+     desc:"Inbound follow-up moves faster. Day 1 should deliver something concrete — a proposal outline, a cohort structure, a specific next-step document.",
+     rules:["Include a draft next-step document or proposal outline if the meeting went well","Reference the specific opportunity discussed — be concrete about what partnership could look like","Confirm the agreed next step with the exact date and what each side will do before then"],
+     links:["Follow-up email template","Partnership proposal"]},
+    {phase:"after",name:"Day 3",title:"Check in sooner than standard",
+     desc:"Inbound contacts have a shorter follow-up window — their expectation was set in the meeting. Day 3, not Day 5.",
+     rules:["Reference something specific from the meeting — not a generic check-in","If they push the timeline, reset the date and move it forward in the tracker"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Day 10",title:"One final ask — then park",
+     desc:"If ten days have passed with no response from an inbound contact, one final direct message — then park with the note that inbound contacts who go quiet are often the best re-engagement opportunities.",
+     rules:["'I want to respect your time — is this still worth exploring, or should we reconnect at a better moment?'","Inbound contacts going cold after a meeting usually means timing, not disinterest — park with that in mind"],
+     warn:"Re-engage inbound contacts quarterly with something new and relevant.",
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+},
+{
+  name:"Warm intro",
+  sub:"A mutual contact connected you — you start with credibility",
+  col:"#854F0B",bg:"#FAEEDA",icon:"↔",
+  desc:"The second-highest-quality lead type. The connector's relationship capital transfers to you — you arrive with trust rather than having to build it. The risk is mishandling the introduction and reflecting poorly on both relationships.",
+  steps:[
+    {phase:"outreach",name:"Honour the intro",title:"Your first move is to the connector — not the contact",
+     desc:"Within a couple of hours of receiving the introduction, acknowledge the connector. This protects their reputation, reinforces the relationship, and sets the right tone for the new conversation.",
+     rules:["Reply into the existing introduction thread — starting a fresh chain loses the context","Reference what the connector told you about them — it shows you took the introduction seriously","Keep the first message to the new contact brief: who you are, why the connector thought this was relevant, one genuine question"],
+     links:["Warm intro email template"]},
+    {phase:"outreach",name:"Discovery call",title:"A conversation, not a pitch",
+     desc:"The warm intro has given you credibility — the worst thing to do is spend it too quickly. This call should feel like a conversation between two people introduced by someone they both respect.",
+     rules:["Open with a reference to the connector — it builds shared trust from the first sentence","Ask about their world before talking about YouthToPro","Read the room honestly: are they genuinely curious, or is this a courtesy to the connector?"],
+     branches:[{label:"Genuinely interested",type:"good",text:"Propose a formal meeting — book it within the week while momentum is fresh"},{label:"Politely interested",type:"neutral",text:"Send the one-pager and propose a follow-up call in two weeks"},{label:"No response after call",type:"warn",text:"One follow-up at day 5 — then update the connector briefly and park"}],
+     links:["3-min pitch script","Persona cards"]},
+    {phase:"meeting",name:"Before the meeting",title:"A weak meeting reflects on the connector too",
+     desc:"A warm intro does not replace preparation — if anything, it raises the bar. Ask the connector what they know about this person's current priorities before you go in.",
+     rules:["Ask the connector: 'Is there anything I should know about their current priorities before we meet?' — they will often have useful context","Research them as you would any outreach target — the introduction opened the door, preparation keeps it open","Prepare the specific persona card for their type and geography"],
+     links:["Persona cards","Country notes","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Reference the connector — it anchors why you are both here",
+     desc:"The opening of a warm intro meeting is different. Acknowledging the connector signals that you respect the relationship that brought you here — and reminds both of you why the meeting is happening.",
+     rules:["Open by acknowledging the connector warmly: 'I really appreciate [Name] making this connection — they spoke very highly of your work on [topic]'","Move to a genuine question about their current priorities — not a YouthToPro pitch","The tone is more conversational and less formal than a cold meeting — reflect that from the start"],
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"You started with trust — use it well",
+     desc:"You arrived with a relational advantage. Build the case carefully — a warm intro contact will often be more candid, which means you need to listen more carefully and tailor more precisely.",
+     rules:["Use what the connector told you to shape your opening angle — you have an advantage, use it","Be prepared for more direct questions — candour is a sign of genuine engagement","The partnership ask can be framed as a natural extension of the connector's recommendation"],
+     links:["Persona cards","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Candour from a warm intro is a gift — treat it that way",
+     desc:"A warm intro contact who raises an objection is being honest in a way a cold contact often cannot be. That honesty is a signal of real engagement.",
+     rules:["Acknowledge with genuine appreciation: 'That is a really honest point, thank you'","The connector's implied endorsement gives your reframe more weight — use that quietly","Anchor with specific data","Use the objection to deepen the conversation, not close it down"],
+     objections:[
+       {q:`"I only took this meeting as a favour to [connector]."`,a:"I appreciate that, and I respect your time. Let me make it worthwhile — what would be genuinely useful to you in the next 15 minutes?"},
+       {q:`"We have explored similar things before without success."`,a:"That context is really helpful. What went wrong? Understanding that helps me tell you quickly whether YouthToPro is different in the ways that matter."},
+       {q:`"I am not sure this fits our current strategy."`,a:"What is your current strategic focus? I want to understand where the fit might be — or be honest with you if it is not there."},
+       {q:`"How long have you been working with [connector]?"`,a:"[Answer honestly]. Our relationship with [connector] developed around [context] — they thought of you specifically because of [reason they gave]."},
+       {q:`"What would a partnership actually involve on our side?"`,a:"That is exactly the right question. Let me walk you through what we have designed for organisations at your stage of interest — it is lighter than you might expect."}
+     ],
+     links:["Objection handling card"]},
+    {phase:"meeting",name:"During — close",title:"Close with a specific step — and acknowledge the connector",
+     desc:"Close as you would in any meeting, but the shared connection makes the ask land more naturally — use that.",
+     rules:["'Based on what you have shared, I would like to propose [specific next step] — does [date] work?'","A gentle reference to the connector: 'I know [Name] was hoping we might find something worth exploring — I would like to see if we can'","Confirm the next step before leaving"],
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1 — both contacts",title:"Two messages on Day 1 — the contact and the connector",
+     desc:"A warm intro has a third party involved. Two brief messages: one to the contact, one to update the connector.",
+     rules:["To the contact: the standard Day 1 follow-up with specific references to what they said","To the connector: a brief, warm update — 'We had a great conversation, thank you for making the introduction. We are exploring [next step]'","Do not share the details of the meeting with the connector without the contact's knowledge"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"Standard cadence from here",
+     desc:"From Day 5 onward, the follow-up cadence matches the standard sequence. The warm intro advantage has done its work.",
+     rules:["'Following up on [specific next step] — does [date] still work?'","Reference something specific from the formal meeting, not the original introduction","If they go quiet: one more follow-up at Day 14, then park"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Keep connector updated",title:"The connector becomes an ongoing advocate",
+     desc:"As the partnership develops, brief updates to the connector turn them into an active advocate — and often the source of the next introduction.",
+     rules:["A brief note when a milestone is reached: 'We have agreed to explore a pilot — thank you again for the introduction'","Never overshare the details of the conversation — respect the privacy of both parties","A connector who sees their introduction bear fruit will make more introductions"],
+     links:["Pipeline tracker"]}
+  ]
+},
+{
+  name:"Live encounter",
+  sub:"In the room — no preparation time, one chance",
+  col:"#993C1D",bg:"#FAECE7",icon:"●",
+  desc:"The sharpest instincts required. No preparation, a social context, one chance. The goal is not to close anything — it is to earn a second, structured conversation.",
+  steps:[
+    {phase:"outreach",name:"Read first",title:"Never open with a pitch",
+     desc:"You are in a social context. The fastest way to close a door is to launch into a pitch the moment you shake hands. Spend 60 seconds understanding who you are talking to and whether there is a natural hook.",
+     rules:["Ask what they do before sharing what you do — always","Listen for natural connection points: youth, employment, education, CSR, Jordan, Lebanon, Egypt, KSA","If there is no natural hook in 60 seconds, this may not be the right moment — and that is fine"],
+     links:["30-sec elevator script"]},
+    {phase:"outreach",name:"30-sec pitch",title:"Problem first. System second. Question last.",
+     desc:"When the moment presents itself, deliver the 30-second pitch as a natural response to the conversation — not as a prepared speech.",
+     rules:["'1 in 4 Arab graduates cannot find work — not because of qualifications, but because of the transition gap. YouthToPro is the structured bridge. We have placed 60% of our graduates into jobs or internships across 8+ countries. Is this something that touches your work?'","Watch their reaction after the problem statement — lean in means continue, look away means pivot","End with a question, not a close"],
+     branches:[{label:"They engage",type:"good",text:"Exchange contacts — send a personalised follow-up the same evening"},{label:"Mildly curious",type:"neutral",text:"Connect on LinkedIn with a personal note — do not push for more right now"},{label:"Not relevant",type:"warn",text:"A warm exit: 'Great to meet you — I hope our paths cross again'"}],
+     links:["30-sec elevator script"]},
+    {phase:"outreach",name:"Same-day follow-up",title:"The window is a few hours — do not wait",
+     desc:"The follow-up after a live encounter needs to happen the same day, while the conversation is still fresh for both of you.",
+     rules:["Match the channel to their context: corporate setting suggests email, informal event suggests LinkedIn","Reference one specific thing they said — it signals you were present, not just pitching","One simple ask: a 20-minute call to explore further"],
+     links:["Follow-up email template","Universal one-pager"]},
+    {phase:"meeting",name:"Before the meeting",title:"The encounter got you here — now prepare properly",
+     desc:"The live encounter opened the door. Treat the formal meeting that follows with the same preparation you would bring to any first meeting — the casual origin does not lower the standard.",
+     rules:["Research them as you would any outreach target — the encounter gave you a connection, not a pass on preparation","Review the persona card for their type and context","Prepare your close: what specific next step are you aiming for?"],
+     links:["Persona cards","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Reference the encounter — it anchors the relationship",
+     desc:"Opening by acknowledging where you met and what you discussed reminds them why they agreed to the meeting and creates a natural bridge into the conversation.",
+     rules:["'When we met at [event], you mentioned [specific thing] — I have been thinking about how that connects to what we do'","Then move into a genuine question about their current priorities","The encounter gave you one piece of genuine context — use it"],
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"This is your first formal pitch — deliver it as one",
+     desc:"A live encounter follow-up is essentially a first formal meeting. Deliver the full four-pillar case. The personal connection warms the room — it does not replace the substance.",
+     rules:["Deliver the full pitch — do not assume the encounter covered enough","Reference what they said at the event to make the case feel tailored rather than generic","Close for a specific next step — the personal connection makes the direct ask easier"],
+     links:["Persona cards","3-min script","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Handle as you would any first meeting",
+     desc:"A live encounter follow-up carries the same objection landscape as any first formal meeting. The personal connection helps with tone — the substance is the same.",
+     rules:["Acknowledge first: 'That is a fair point'","Use the personal connection to make the reframe feel collaborative rather than defensive","The same data points apply","Reference the original conversation as a reason to continue"],
+     objections:[
+       {q:`"I am glad we met but I am not sure this is for us."`,a:"That is really helpful context. What would need to be different for it to be relevant? That helps me either show you where the fit is — or be honest with you that it is not there."},
+       {q:`"I only agreed to this meeting to be polite."`,a:"I appreciate your honesty — and I will respect your time. What would make the next 15 minutes genuinely useful for you?"},
+       {q:`"Things have changed since we met."`,a:"What changed? That context helps me understand whether the timing is off or whether there is a different angle that works better now."},
+       {q:`"We don't have budget for this kind of thing."`,a:"Budget is not where I want to start. Let me show you what a partnership looks like first — then we can talk about whether there is a structure that works for your situation."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"The personal connection makes the ask more natural",
+     desc:"Use the connection from the original encounter to make the close feel like a continuation of an ongoing conversation rather than a formal ask.",
+     rules:["'I really enjoyed meeting you at [event] and this conversation has confirmed what I thought — there is something worth exploring. Can we agree on [specific next step] before we leave?'","The personal connection makes a direct ask less transactional — use that","Confirm the next step before leaving or ending the call"],
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"Reference the event — it reinforces the personal connection",
+     desc:"The Day 1 follow-up from a live encounter should still reference the original meeting point. It reinforces the personal thread that made this conversation happen.",
+     rules:["Reference the event and the specific exchange that led here","Thank them for following up on the encounter — not just for their time in the formal meeting","Confirm the agreed next step with the date"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"Standard cadence from here",
+     desc:"From Day 5 onward, treat this like any other follow-up sequence. The personal connection has done its work.",
+     rules:["Standard check-in: 'Following up on [specific next step] — does [date] still work?'","Reference something from the formal meeting at this stage, not the original encounter","If they go quiet: Day 14 value-add, Day 30 direct ask, then park"],
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+}
+];
+let sc_journeyIdx=0, sc_stepIdx=0, sc_view='cards';
+
+function renderScenarios(){
+  const el=document.getElementById('view-scenarios');
+  el.innerHTML=`<div id="sc-main"></div>`;
+  scRenderCards();
+}
+
+function scSetView(v){
+  sc_view=v;
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+  if(v==='journey') scRenderJourney();
+  else { sc_view='cards'; scRenderCards(); }
+}
+
+function scHover(el,col,on){
+  el.style.borderColor=on?col:'var(--border)';
+  el.style.boxShadow=on?'0 4px 20px rgba(0,0,0,0.1)':'var(--shadow)';
+}
+function scRenderCards(){
+  sc_view='cards';
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+  main.innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:.5rem">
+    ${SC_JOURNEYS.map((j,i)=>`
+    <div onclick="scOpenJourney(${i})" onmouseover="scHover(this,'${j.col}',true)" onmouseout="scHover(this,'${j.col}',false)"
+      style="background:var(--bg);border-radius:var(--radius);padding:1.6rem 1.75rem;cursor:pointer;border:1px solid var(--border);transition:all .18s;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <span style="font-size:24px;color:${j.col};font-weight:300">${j.icon}</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:500">${j.steps.length} steps →</span>
+      </div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px">${j.name}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.55">${j.sub}</div>
+      <div style="margin-top:1.1rem;height:3px;border-radius:2px;background:${j.col};opacity:0.25;width:100%"></div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function scOpenJourney(i){
+  sc_journeyIdx=i;
+  sc_stepIdx=0;
+  sc_view='journey';
+  scRenderJourney();
+}
+
+function scRenderJourney(){
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+
+  // Phase labels
+  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
+
+  // Group steps by phase for the stepper
+  let lastPhase='';
+  const stepperHTML=j.steps.map((s,i)=>{
+    const isActive=i===sc_stepIdx;
+    const isDone=i<sc_stepIdx;
+    const phaseChange=s.phase!==lastPhase;
+    lastPhase=s.phase;
+    const phasePill=phaseChange?`<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${phaseCols[s.phase]};margin-bottom:5px;padding-left:2px">${phaseLabel[s.phase]||s.phase}</div>`:'';
+    return `${phasePill}<button class="sc-step-btn" onclick="scGoStep(${i})" style="display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;border:1.5px solid ${isActive?phaseCols[s.phase]:'var(--border)'};background:${isActive?phaseBgs[s.phase]:'transparent'};cursor:pointer;margin-bottom:5px;transition:all .15s;font-size:12.5px;font-weight:${isActive?'600':'400'};color:${isActive?phaseCols[s.phase]:isDone?'var(--text3)':'var(--text2)'}">${s.name}</button>`;
+  }).join('');
+
+  const s=j.steps[sc_stepIdx];
+  const pCol=phaseCols[s.phase]||j.col;
+  const pBg=phaseBgs[s.phase]||j.bg;
+
+  main.innerHTML=`
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
+    <button onclick="scSetView('cards')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px">← Back</button>
+    <span style="font-size:15px;font-weight:600;color:${j.col}">${j.name}</span>
+    <span style="font-size:12px;color:var(--text3)">${j.sub}</span>
+  </div>
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;border:1px solid var(--border)">
+      ${stepperHTML}
+    </div>
+    <div class="sc-card" id="sc-step-card"></div>
+  </div>`;
+
+  scRenderStep();
+  if(editMode) setTimeout(activateEditMode,60);
+}
+
+function scGoStep(i){
+  const _j=SC_JOURNEYS[sc_journeyIdx];
+  if(!_j||i<0||i>=_j.steps.length) return;
+  sc_stepIdx=i;
+  // Update stepper button active states
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
+  document.querySelectorAll('.sc-step-btn').forEach((btn,idx)=>{
+    const s=j.steps[idx];
+    const isActive=idx===i;
+    const isDone=idx<i;
+    const c=phaseCols[s.phase]||j.col;
+    const bg=phaseBgs[s.phase]||j.bg;
+    btn.style.borderColor=isActive?c:'var(--border)';
+    btn.style.background=isActive?bg:'transparent';
+    btn.style.color=isActive?c:isDone?'var(--text3)':'var(--text2)';
+    btn.style.fontWeight=isActive?'600':'400';
+  });
+  scRenderStep();
+  if(editMode) setTimeout(activateEditMode,60);
+}
+
+function scRenderStep(){
+  const _j2=SC_JOURNEYS[sc_journeyIdx];
+  if(!_j2||sc_stepIdx<0||sc_stepIdx>=_j2.steps.length) return;
+  const card=document.getElementById('sc-step-card');
+  if(!card) return;
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const s=j.steps[sc_stepIdx];
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
+  const c=phaseCols[s.phase]||j.col;
+
+  const prev=sc_stepIdx>0?`<button onclick="scGoStep(${sc_stepIdx-1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2)">← Previous</button>`:'<span></span>';
+  const next=sc_stepIdx<j.steps.length-1?`<button onclick="scGoStep(${sc_stepIdx+1})" style="padding:6px 14px;border-radius:8px;border:none;background:${c};cursor:pointer;font-size:12px;color:#fff;font-weight:500">Next →</button>`:'<span style="font-size:12px;color:var(--text3);padding:6px 0">End of journey</span>';
+
+  card.innerHTML=`
+  <div class="sc-head">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${c};background:${j.bg};padding:3px 9px;border-radius:8px">${phaseLabel[s.phase]||s.phase}</span>
+      <span style="font-size:12px;color:var(--text3)">${sc_stepIdx+1} of ${j.steps.length}</span>
+    </div>
+    <div class="sc-title">${s.name}</div>
+  </div>
+  <div class="sc-body">${scStepHTML(s,c)}</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;border-top:1px solid var(--border)">${prev}${next}</div>`;
+}
+
+
+function scStepHTML(st,c){
+  let h=`<div class="sc-what">${st.title}</div><div class="sc-desc">${st.desc}</div>`;
+  if(st.rules)h+=`<div class="rules-list">`+st.rules.map((r,i)=>`<div class="sc-rule"><span class="sc-rule-num" style="color:${c}">${i+1}</span><span class="sc-rule-text">${r}</span></div>`).join('')+`</div>`;
+  if(st.fmt)h+=`<div class="fmt-grid2">
+    <div class="fmt-c"><span class="fmt-tag" style="background:#E6F1FB;color:#0C447C">20–30 min</span><div class="fmt-title">Discovery call</div><div class="fmt-det">No deck. Qualify and listen. Close for a formal meeting with a date.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#E1F5EE;color:#085041">45–90 min</span><div class="fmt-title">First formal meeting</div><div class="fmt-det">Optional deck. Bring one-pager. Close for proposal or next meeting.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#EEEDFE;color:#3C3489">60–120 min</span><div class="fmt-title">Board / committee pitch</div><div class="fmt-det">Full deck. Multiple leave-behinds. Close for proposal review date.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#FAEEDA;color:#633806">Open</span><div class="fmt-title">Informal / social</div><div class="fmt-det">No deck. Relationship first. Close for a follow-up call within 2 weeks.</div></div>
+  </div>`;
+  if(st.warn)h+=`<div class="sc-warn">${st.warn}</div>`;
+  if(st.good)h+=`<div class="sc-good">${st.good}</div>`;
+  if(st.info)h+=`<div class="sc-info">${st.info}</div>`;
+  if(st.branches)h+=`<div class="br-grid">${st.branches.map(b=>{
+    const bg={good:'var(--bg2)',neutral:'var(--bg3)',warn:'#fff5f5'};
+    const bd={good:'var(--border)',neutral:'var(--border2)',warn:'#fdd'};
+    const tx={good:c,neutral:'var(--text3)',warn:'#c03030'};
+    return`<div class="br-item" style="background:${bg[b.type]};border:0.5px solid ${bd[b.type]}"><strong style="color:${tx[b.type]}">${b.label}</strong><span style="color:var(--text2)">${b.text}</span></div>`;
+  }).join('')}</div>`;
+  if(st.objections)h+=`<div class="obj-stack">${st.objections.map(o=>`
+    <div class="obj-row">
+      <div class="obj-q"><div class="obj-lbl">They say</div>${o.q}</div>
+      <div class="obj-a"><div class="obj-lbl" style="color:${c}">You say</div>${o.a}</div>
+    </div>`).join('')}</div>`;
+  if(st.links)h+=`<div class="sc-links">${st.links.map(l=>`<button class="sc-lbtn">${l} ↗</button>`).join('')}</div>`;
+  return h;
+}
 
 
 function toggleEdit(){
@@ -1005,13 +1415,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <div class="topbar-tag">Business Development Toolkit</div>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-ghost" onclick="toggleEdit()" id="editBtn">✏️ Edit mode</button>
-    <button class="btn btn-save" onclick="saveToFile()">⬇ Save HTML</button>
+    
+    
   </div>
 </div>
 <div class="edit-bar" id="editBar">
   <strong>Edit mode on</strong> — click any text to edit directly. Hit Save HTML when done.
-  <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="toggleEdit()">Done</button>
+  
 </div>
 <div class="main">
   <div class="topnav">
@@ -1031,7 +1441,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     <p>Downloads a new HTML file with all your edits baked in. Open in any browser — no internet needed.</p>
     <div class="modal-actions">
       <button class="btn" style="background:var(--bg3);color:var(--text2);border:none" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-save" onclick="doSave()">Download</button>
+      
     </div>
   </div>
 </div>
@@ -1451,6 +1861,416 @@ function renderTemplates(){
 }
 
 function setTplIdx(i){ tplIdx=i; renderTemplates(); if(editMode) setTimeout(activateEditMode,60); }
+
+
+const SC_JOURNEYS=[
+{
+  name:"We reach out",
+  sub:"You identified them — they don't know you yet",
+  col:"#183B68",bg:"#E6F1FB",icon:"→",
+  desc:"The highest-effort entry point — and the one where preparation makes the biggest difference. You control the narrative completely. Success at this stage means a reply and a conversation, not a commitment.",
+  steps:[
+    {phase:"outreach",name:"Research",title:"Arrive knowing more than they expect",
+     desc:"Before any contact, invest 20 minutes in genuine research. The goal is to find one specific, relevant connection between their world and YouthToPro — something that makes the outreach feel considered rather than broadcast.",
+     rules:["The persona card gives you their language, their drivers, and what to avoid — worth reviewing before anything else","Finding the right person by name matters more than the perfect message — Program Officer, CSR Manager, VP Student Affairs","One specific hook — a recent initiative, a stated priority, a country focus — is worth more than a detailed description of YouthToPro"],
+     links:["Partner research brief","Persona cards","Country notes"]},
+    {phase:"outreach",name:"Draft & send",title:"Short, specific, and one clear ask",
+     desc:"The most effective cold outreach is brief. Three sentences that connect their world to the problem, and one simple ask — a 20-minute conversation, not a full presentation.",
+     rules:["The subject line should reflect their language and priorities, not YouthToPro's name","A deck attached to a first message signals you haven't qualified them yet — hold it back","One ask only — a specific time or a simple yes/no — keeps the path forward clear"],
+     branches:[{label:"They replied",type:"good",text:"Respond within a few hours — momentum matters at this stage"},{label:"No response at day 5",type:"neutral",text:"One follow-up with a fresh angle or a relevant data point"},{label:"No response at day 14",type:"warn",text:"A final note, then park — add to the quarterly re-engagement list"},{label:"Not interested",type:"warn",text:"Thank them warmly and leave the door open — circumstances change"}],
+     links:["Cold outreach templates","Pitch selection guide"]},
+    {phase:"outreach",name:"Discovery call",title:"Listen more than you speak",
+     desc:"This call is about understanding their world well enough to know whether YouthToPro genuinely fits — and whether they are worth a formal meeting. You are qualifying them as much as they are evaluating you.",
+     rules:["A question about their current priorities opens the conversation far better than a YouthToPro introduction","The first ten minutes belong to them — the pitch comes in the last five","Close with one specific proposal: a formal session with their team, a date, a name"],
+     links:["3-min pitch script","Objection handling card"]},
+    {phase:"meeting",name:"Before the meeting",title:"Prepare as if you reached out cold — because you did",
+     desc:"Starting cold means you carry a slightly lower trust baseline into the room. The preparation is how you close that gap before the meeting begins. Know exactly what you are closing for before you walk in.",
+     rules:["The persona card, their recent news, and one specific reference point — those three things are the minimum","Decide your close in advance: a proposal review date, a pilot discussion, a follow-up meeting — not a vague next step","Prepare for the two most likely objections for this persona type — you should never be surprised in the room"],
+     links:["Persona cards","Meeting prep checklist","Pitch deck"]},
+    {phase:"meeting",name:"During — opening",title:"The first ten minutes belong to them",
+     desc:"Resist the urge to open with YouthToPro. A genuine question about their current thinking — and genuine listening — tells you everything you need to tailor the next 30 minutes.",
+     rules:["Something like: 'Before I share what we do — what is your current thinking on graduate employment in your context?' works consistently","What they say in the first ten minutes determines which pillar to lead with, which proof point lands, which objection is coming","Taking notes visibly signals you are listening — and gives you material for a more specific Day 1 follow-up"],
+     warn:"A pitch in the first two minutes of a cold meeting almost always closes doors before they open.",
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"Connect their world to the problem — then to the solution",
+     desc:"Build the case using the four-pillar structure, in the sequence and language that matches what they just told you. You are drawing connections for a specific person, not delivering a slide.",
+     rules:["Bridge naturally: 'That is exactly the gap YouthToPro was built to address'","Use the data point most relevant to what they said — Jordan's 46% if they mentioned Jordan, national employment if they mentioned policy","The partnership ask always comes last — and it is always framed as selection, not solicitation"],
+     links:["3-min script","Pitch deck","Persona cards"]},
+    {phase:"meeting",name:"During — objections",title:"An objection is engagement — treat it that way",
+     desc:"An objection from a cold contact means they are still in the conversation. The four-step approach keeps the response structured without feeling defensive.",
+     rules:["Acknowledge first — 'That is a fair point, and we hear it often' — before anything else","Reframe the frame, not the person","Anchor with a specific proof point, not a general claim","Return to the forward conversation — objections are not the destination"],
+     objections:[
+       {q:`"How do we know this actually works?"`,a:"Our 60% employment conversion rate is tracked every cohort across 8+ countries. We can share anonymised outcome data from previous cycles — the numbers are documented, not estimated."},
+       {q:`"We don't have budget right now."`,a:"The budget conversation doesn't need to happen today. Let's establish whether the fit is there first — several of our strongest partnerships started as unfunded conversations."},
+       {q:`"You're not established enough."`,a:"We have +200 mentors, active programmes in 8+ countries, and a 60% placement rate tracked every cohort. Happy to walk through the programme architecture if that would be useful."},
+       {q:`"Can you send me more information?"`,a:"Of course — what would be most useful for your specific context? That helps me send something relevant rather than a generic pack."},
+       {q:`"We need to discuss internally."`,a:"Completely understood. What are the one or two questions your team would most want answered? I can prepare a brief that addresses those specifically."},
+       {q:`"We already have something similar."`,a:"What does yours focus on? That context helps me tell you quickly whether there is genuine overlap or a complementary angle worth exploring."},
+       {q:`"This isn't a priority right now."`,a:"When does your next planning cycle begin? It is worth having this conversation at the right moment rather than rushing it into the wrong one."},
+       {q:`"I'm not the right person."`,a:"Who would be? I am happy to prepare a brief specifically for that conversation."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"Leave with something specific — a date, a name, a next step",
+     desc:"The close from a cold meeting is not about a commitment. It is about a clear, named, dated next step that keeps the conversation moving without requiring a decision today.",
+     rules:["Something like: 'Based on what you have shared, I would like to propose [specific next step] — does [date] work?' gives them something concrete to respond to","Avoid ending with 'let me know what you think' — that is not a close, it is an exit","If they hesitate: offer two options rather than one open question"],
+     good:"A specific next step agreed in the room is the win from a cold start.",
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"More than a thank you — a continuation",
+     desc:"Send within 24 hours. From a cold meeting, this note does real work — it reinforces credibility and moves the conversation forward while the memory is fresh.",
+     rules:["Reference two or three specific things they said — it proves you were listening, not just presenting","Restate the value in their language, not YouthToPro's standard messaging","Confirm the agreed next step with the exact date"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"A focused check-in, not a chase",
+     desc:"One focused sentence referencing the specific next step. No re-pitch, no new attachments.",
+     rules:["'Following up on [specific next step] — does [date] still work for you?' is sufficient","If they adjust the timeline, reset the date and update the tracker"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Day 14",title:"Something of value — not another ask",
+     desc:"If there has been no response, a piece of genuine value keeps the relationship alive without pressure. A cold contact needs more relationship capital before they respond to a direct ask.",
+     rules:["A relevant data point, a cohort outcome, or something that connects to what they raised in the meeting","No ask in this message — the relationship is the ask at this stage","Distinguishes YouthToPro from every organisation that sent one email and disappeared"],
+     info:"Day 14 is about presence, not pressure.",
+     links:["Pipeline tracker"]},
+    {phase:"after",name:"Day 30",title:"A direct question — then park",
+     desc:"One final message that makes it easy to respond in any direction. After this, quarterly re-engagement.",
+     rules:["'I want to respect your time — is this still worth exploring, or should we reconnect at a better moment?' gives them three easy responses","A yes, a no, and a not yet are all useful — silence is the only unhelpful outcome","Park with context: note why they went quiet and when to re-engage"],
+     warn:"Persistence is professional. Pressure is not.",
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+},
+{
+  name:"They come to us",
+  sub:"They reached out first — highest-quality lead",
+  col:"#347969",bg:"#E1F5EE",icon:"←",
+  desc:"The highest-quality lead type — intent is already present. The job here is to qualify quickly, respond well, and guide the conversation into a structured next step before the interest cools.",
+  steps:[
+    {phase:"outreach",name:"Respond fast",title:"Reply within a few hours — interest moves quickly",
+     desc:"Someone came to you. That is rare and worth treating with care. One genuine question to understand what prompted their interest, and one proposed time for a short call — nothing more.",
+     rules:["'What prompted your interest?' tells you the entry point, the urgency, and the right angle — ask it every time","A 20-minute call within three business days is the right next step — not a vague 'let's connect'","If the enquiry is unclear, the universal one-pager and a call proposal is the right response"],
+     branches:[{label:"Clear fit",type:"good",text:"Book the meeting quickly — treat with the same care as a warm introduction"},{label:"Unclear fit",type:"neutral",text:"Clarifying question plus one-pager, call proposed within five days"},{label:"Wrong fit",type:"warn",text:"A graceful, warm redirect — the right response now builds goodwill for later"}],
+     links:["Universal one-pager","Follow-up email template"]},
+    {phase:"outreach",name:"Prep meeting",title:"They chose you — now earn it",
+     desc:"An inbound contact has done half the work. The preparation bar does not drop because they came to you — if anything, it rises.",
+     rules:["Load the persona card and understand what specifically would matter to this type in their context","Find out who else will be in the meeting — there may be multiple decision-makers in the room","Prepare for two scenarios: they want to move quickly, and they want more information first"],
+     links:["Persona cards","Meeting prep checklist","Pitch deck"]},
+    {phase:"meeting",name:"Before the meeting",title:"Inbound interest is not a substitute for preparation",
+     desc:"Research them as thoroughly as you would any outreach target. The difference is your starting credibility — not your preparation standard.",
+     rules:["What prompted their interest? If you do not already know, find out — the timing reveals the real opportunity","Review the persona card for what specifically would matter to this type in this context","Prepare both scenarios: they want to move fast, and they want to understand more first"],
+     links:["Persona cards","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Start with what brought them here",
+     desc:"The opening question shifts slightly for an inbound meeting — it starts with their reason and their timing, not the problem.",
+     rules:["'What made you reach out at this particular moment?' — the timing tells you the real opportunity","Confirm what success looks like for them before you present anything","The four-pillar structure still applies — but begin from where their interest sits, not from Pillar 1"],
+     good:"An inbound contact has already made a mental commitment to explore this. A good opening question deepens that rather than starting from scratch.",
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"Build from their interest outward",
+     desc:"You know why they came. Start from that point — not from the beginning. If they came because of the placement rate, open there. If they came because of a country connection, open there.",
+     rules:["Mirror the language from their enquiry — it signals you listened before they arrived","The partnership ask can come earlier in an inbound meeting — they are already warm to the idea","Be direct about what you want from the meeting: a clear next step before you leave"],
+     links:["Persona cards","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Objections here are refinements, not resistance",
+     desc:"An inbound contact who raises an objection is not pushing back — they are testing the logic before they commit. Treat it as due diligence.",
+     rules:["Acknowledge without surprise — they came to you, so their questions come from curiosity, not scepticism","Reframe with confidence — you earned this meeting","Anchor the proof to what attracted them in the first place","Use the objection as a natural ramp into the next step"],
+     objections:[
+       {q:`"We need to involve more people before deciding."`,a:"Of course. Who else should be part of this conversation? I can prepare materials tailored to their questions — or join the follow-up meeting directly if that would help."},
+       {q:`"We are still evaluating a few options."`,a:"That makes complete sense. What are the one or two things that will matter most in your evaluation? I want to make sure we address those directly."},
+       {q:`"Can you send us a formal proposal?"`,a:"Absolutely. Before I do — what should the proposal specifically address? I want it to answer the right questions, not just describe the programme."},
+       {q:`"We need stronger proof of impact."`,a:"We have full outcome data from every cohort we have run. I can share the anonymised reports today — which metrics matter most for your evaluation?"},
+       {q:`"The timing might not work for this cycle."`,a:"When does your next cycle begin? It is worth structuring this conversation around the right moment rather than the current one."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"You can close more ambitiously — they are already warm",
+     desc:"An inbound meeting can aim higher than a cold meeting close. A proposal review, an MoU discussion, or a cohort timeline is a more appropriate close than simply scheduling another call.",
+     rules:["'Based on what you have shared, I would like to propose [specific next step] — does [date] work?'","The close can be more substantive: a proposal review, a pilot discussion, a partnership framework conversation","If they agree to a next step in the room — confirm it in writing before the meeting ends"],
+     good:"Inbound contacts convert faster. Do not under-close when the meeting has gone well.",
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"Substance on Day 1 — not just a thank you",
+     desc:"Inbound follow-up moves faster. Day 1 should deliver something concrete — a proposal outline, a cohort structure, a specific next-step document.",
+     rules:["Include a draft next-step document or proposal outline if the meeting went well","Reference the specific opportunity discussed — be concrete about what partnership could look like","Confirm the agreed next step with the exact date and what each side will do before then"],
+     links:["Follow-up email template","Partnership proposal"]},
+    {phase:"after",name:"Day 3",title:"Check in sooner than standard",
+     desc:"Inbound contacts have a shorter follow-up window — their expectation was set in the meeting. Day 3, not Day 5.",
+     rules:["Reference something specific from the meeting — not a generic check-in","If they push the timeline, reset the date and move it forward in the tracker"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Day 10",title:"One final ask — then park",
+     desc:"If ten days have passed with no response from an inbound contact, one final direct message — then park with the note that inbound contacts who go quiet are often the best re-engagement opportunities.",
+     rules:["'I want to respect your time — is this still worth exploring, or should we reconnect at a better moment?'","Inbound contacts going cold after a meeting usually means timing, not disinterest — park with that in mind"],
+     warn:"Re-engage inbound contacts quarterly with something new and relevant.",
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+},
+{
+  name:"Warm intro",
+  sub:"A mutual contact connected you — you start with credibility",
+  col:"#854F0B",bg:"#FAEEDA",icon:"↔",
+  desc:"The second-highest-quality lead type. The connector's relationship capital transfers to you — you arrive with trust rather than having to build it. The risk is mishandling the introduction and reflecting poorly on both relationships.",
+  steps:[
+    {phase:"outreach",name:"Honour the intro",title:"Your first move is to the connector — not the contact",
+     desc:"Within a couple of hours of receiving the introduction, acknowledge the connector. This protects their reputation, reinforces the relationship, and sets the right tone for the new conversation.",
+     rules:["Reply into the existing introduction thread — starting a fresh chain loses the context","Reference what the connector told you about them — it shows you took the introduction seriously","Keep the first message to the new contact brief: who you are, why the connector thought this was relevant, one genuine question"],
+     links:["Warm intro email template"]},
+    {phase:"outreach",name:"Discovery call",title:"A conversation, not a pitch",
+     desc:"The warm intro has given you credibility — the worst thing to do is spend it too quickly. This call should feel like a conversation between two people introduced by someone they both respect.",
+     rules:["Open with a reference to the connector — it builds shared trust from the first sentence","Ask about their world before talking about YouthToPro","Read the room honestly: are they genuinely curious, or is this a courtesy to the connector?"],
+     branches:[{label:"Genuinely interested",type:"good",text:"Propose a formal meeting — book it within the week while momentum is fresh"},{label:"Politely interested",type:"neutral",text:"Send the one-pager and propose a follow-up call in two weeks"},{label:"No response after call",type:"warn",text:"One follow-up at day 5 — then update the connector briefly and park"}],
+     links:["3-min pitch script","Persona cards"]},
+    {phase:"meeting",name:"Before the meeting",title:"A weak meeting reflects on the connector too",
+     desc:"A warm intro does not replace preparation — if anything, it raises the bar. Ask the connector what they know about this person's current priorities before you go in.",
+     rules:["Ask the connector: 'Is there anything I should know about their current priorities before we meet?' — they will often have useful context","Research them as you would any outreach target — the introduction opened the door, preparation keeps it open","Prepare the specific persona card for their type and geography"],
+     links:["Persona cards","Country notes","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Reference the connector — it anchors why you are both here",
+     desc:"The opening of a warm intro meeting is different. Acknowledging the connector signals that you respect the relationship that brought you here — and reminds both of you why the meeting is happening.",
+     rules:["Open by acknowledging the connector warmly: 'I really appreciate [Name] making this connection — they spoke very highly of your work on [topic]'","Move to a genuine question about their current priorities — not a YouthToPro pitch","The tone is more conversational and less formal than a cold meeting — reflect that from the start"],
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"You started with trust — use it well",
+     desc:"You arrived with a relational advantage. Build the case carefully — a warm intro contact will often be more candid, which means you need to listen more carefully and tailor more precisely.",
+     rules:["Use what the connector told you to shape your opening angle — you have an advantage, use it","Be prepared for more direct questions — candour is a sign of genuine engagement","The partnership ask can be framed as a natural extension of the connector's recommendation"],
+     links:["Persona cards","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Candour from a warm intro is a gift — treat it that way",
+     desc:"A warm intro contact who raises an objection is being honest in a way a cold contact often cannot be. That honesty is a signal of real engagement.",
+     rules:["Acknowledge with genuine appreciation: 'That is a really honest point, thank you'","The connector's implied endorsement gives your reframe more weight — use that quietly","Anchor with specific data","Use the objection to deepen the conversation, not close it down"],
+     objections:[
+       {q:`"I only took this meeting as a favour to [connector]."`,a:"I appreciate that, and I respect your time. Let me make it worthwhile — what would be genuinely useful to you in the next 15 minutes?"},
+       {q:`"We have explored similar things before without success."`,a:"That context is really helpful. What went wrong? Understanding that helps me tell you quickly whether YouthToPro is different in the ways that matter."},
+       {q:`"I am not sure this fits our current strategy."`,a:"What is your current strategic focus? I want to understand where the fit might be — or be honest with you if it is not there."},
+       {q:`"How long have you been working with [connector]?"`,a:"[Answer honestly]. Our relationship with [connector] developed around [context] — they thought of you specifically because of [reason they gave]."},
+       {q:`"What would a partnership actually involve on our side?"`,a:"That is exactly the right question. Let me walk you through what we have designed for organisations at your stage of interest — it is lighter than you might expect."}
+     ],
+     links:["Objection handling card"]},
+    {phase:"meeting",name:"During — close",title:"Close with a specific step — and acknowledge the connector",
+     desc:"Close as you would in any meeting, but the shared connection makes the ask land more naturally — use that.",
+     rules:["'Based on what you have shared, I would like to propose [specific next step] — does [date] work?'","A gentle reference to the connector: 'I know [Name] was hoping we might find something worth exploring — I would like to see if we can'","Confirm the next step before leaving"],
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1 — both contacts",title:"Two messages on Day 1 — the contact and the connector",
+     desc:"A warm intro has a third party involved. Two brief messages: one to the contact, one to update the connector.",
+     rules:["To the contact: the standard Day 1 follow-up with specific references to what they said","To the connector: a brief, warm update — 'We had a great conversation, thank you for making the introduction. We are exploring [next step]'","Do not share the details of the meeting with the connector without the contact's knowledge"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"Standard cadence from here",
+     desc:"From Day 5 onward, the follow-up cadence matches the standard sequence. The warm intro advantage has done its work.",
+     rules:["'Following up on [specific next step] — does [date] still work?'","Reference something specific from the formal meeting, not the original introduction","If they go quiet: one more follow-up at Day 14, then park"],
+     links:["Follow-up email template","Pipeline tracker"]},
+    {phase:"after",name:"Keep connector updated",title:"The connector becomes an ongoing advocate",
+     desc:"As the partnership develops, brief updates to the connector turn them into an active advocate — and often the source of the next introduction.",
+     rules:["A brief note when a milestone is reached: 'We have agreed to explore a pilot — thank you again for the introduction'","Never overshare the details of the conversation — respect the privacy of both parties","A connector who sees their introduction bear fruit will make more introductions"],
+     links:["Pipeline tracker"]}
+  ]
+},
+{
+  name:"Live encounter",
+  sub:"In the room — no preparation time, one chance",
+  col:"#993C1D",bg:"#FAECE7",icon:"●",
+  desc:"The sharpest instincts required. No preparation, a social context, one chance. The goal is not to close anything — it is to earn a second, structured conversation.",
+  steps:[
+    {phase:"outreach",name:"Read first",title:"Never open with a pitch",
+     desc:"You are in a social context. The fastest way to close a door is to launch into a pitch the moment you shake hands. Spend 60 seconds understanding who you are talking to and whether there is a natural hook.",
+     rules:["Ask what they do before sharing what you do — always","Listen for natural connection points: youth, employment, education, CSR, Jordan, Lebanon, Egypt, KSA","If there is no natural hook in 60 seconds, this may not be the right moment — and that is fine"],
+     links:["30-sec elevator script"]},
+    {phase:"outreach",name:"30-sec pitch",title:"Problem first. System second. Question last.",
+     desc:"When the moment presents itself, deliver the 30-second pitch as a natural response to the conversation — not as a prepared speech.",
+     rules:["'1 in 4 Arab graduates cannot find work — not because of qualifications, but because of the transition gap. YouthToPro is the structured bridge. We have placed 60% of our graduates into jobs or internships across 8+ countries. Is this something that touches your work?'","Watch their reaction after the problem statement — lean in means continue, look away means pivot","End with a question, not a close"],
+     branches:[{label:"They engage",type:"good",text:"Exchange contacts — send a personalised follow-up the same evening"},{label:"Mildly curious",type:"neutral",text:"Connect on LinkedIn with a personal note — do not push for more right now"},{label:"Not relevant",type:"warn",text:"A warm exit: 'Great to meet you — I hope our paths cross again'"}],
+     links:["30-sec elevator script"]},
+    {phase:"outreach",name:"Same-day follow-up",title:"The window is a few hours — do not wait",
+     desc:"The follow-up after a live encounter needs to happen the same day, while the conversation is still fresh for both of you.",
+     rules:["Match the channel to their context: corporate setting suggests email, informal event suggests LinkedIn","Reference one specific thing they said — it signals you were present, not just pitching","One simple ask: a 20-minute call to explore further"],
+     links:["Follow-up email template","Universal one-pager"]},
+    {phase:"meeting",name:"Before the meeting",title:"The encounter got you here — now prepare properly",
+     desc:"The live encounter opened the door. Treat the formal meeting that follows with the same preparation you would bring to any first meeting — the casual origin does not lower the standard.",
+     rules:["Research them as you would any outreach target — the encounter gave you a connection, not a pass on preparation","Review the persona card for their type and context","Prepare your close: what specific next step are you aiming for?"],
+     links:["Persona cards","Meeting prep checklist"]},
+    {phase:"meeting",name:"During — opening",title:"Reference the encounter — it anchors the relationship",
+     desc:"Opening by acknowledging where you met and what you discussed reminds them why they agreed to the meeting and creates a natural bridge into the conversation.",
+     rules:["'When we met at [event], you mentioned [specific thing] — I have been thinking about how that connects to what we do'","Then move into a genuine question about their current priorities","The encounter gave you one piece of genuine context — use it"],
+     links:["Meeting notes template"]},
+    {phase:"meeting",name:"During — the case",title:"This is your first formal pitch — deliver it as one",
+     desc:"A live encounter follow-up is essentially a first formal meeting. Deliver the full four-pillar case. The personal connection warms the room — it does not replace the substance.",
+     rules:["Deliver the full pitch — do not assume the encounter covered enough","Reference what they said at the event to make the case feel tailored rather than generic","Close for a specific next step — the personal connection makes the direct ask easier"],
+     links:["Persona cards","3-min script","Pitch deck"]},
+    {phase:"meeting",name:"During — objections",title:"Handle as you would any first meeting",
+     desc:"A live encounter follow-up carries the same objection landscape as any first formal meeting. The personal connection helps with tone — the substance is the same.",
+     rules:["Acknowledge first: 'That is a fair point'","Use the personal connection to make the reframe feel collaborative rather than defensive","The same data points apply","Reference the original conversation as a reason to continue"],
+     objections:[
+       {q:`"I am glad we met but I am not sure this is for us."`,a:"That is really helpful context. What would need to be different for it to be relevant? That helps me either show you where the fit is — or be honest with you that it is not there."},
+       {q:`"I only agreed to this meeting to be polite."`,a:"I appreciate your honesty — and I will respect your time. What would make the next 15 minutes genuinely useful for you?"},
+       {q:`"Things have changed since we met."`,a:"What changed? That context helps me understand whether the timing is off or whether there is a different angle that works better now."},
+       {q:`"We don't have budget for this kind of thing."`,a:"Budget is not where I want to start. Let me show you what a partnership looks like first — then we can talk about whether there is a structure that works for your situation."}
+     ],
+     links:["Objection handling card","Persona cards"]},
+    {phase:"meeting",name:"During — close",title:"The personal connection makes the ask more natural",
+     desc:"Use the connection from the original encounter to make the close feel like a continuation of an ongoing conversation rather than a formal ask.",
+     rules:["'I really enjoyed meeting you at [event] and this conversation has confirmed what I thought — there is something worth exploring. Can we agree on [specific next step] before we leave?'","The personal connection makes a direct ask less transactional — use that","Confirm the next step before leaving or ending the call"],
+     links:["Meeting prep checklist"]},
+    {phase:"after",name:"Day 1",title:"Reference the event — it reinforces the personal connection",
+     desc:"The Day 1 follow-up from a live encounter should still reference the original meeting point. It reinforces the personal thread that made this conversation happen.",
+     rules:["Reference the event and the specific exchange that led here","Thank them for following up on the encounter — not just for their time in the formal meeting","Confirm the agreed next step with the date"],
+     links:["Follow-up email template"]},
+    {phase:"after",name:"Day 5",title:"Standard cadence from here",
+     desc:"From Day 5 onward, treat this like any other follow-up sequence. The personal connection has done its work.",
+     rules:["Standard check-in: 'Following up on [specific next step] — does [date] still work?'","Reference something from the formal meeting at this stage, not the original encounter","If they go quiet: Day 14 value-add, Day 30 direct ask, then park"],
+     links:["Follow-up email template","Pipeline tracker"]}
+  ]
+}
+];
+let sc_journeyIdx=0, sc_stepIdx=0, sc_view='cards';
+
+function renderScenarios(){
+  const el=document.getElementById('view-scenarios');
+  el.innerHTML=`<div id="sc-main"></div>`;
+  scRenderCards();
+}
+
+function scSetView(v){
+  sc_view=v;
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+  if(v==='journey') scRenderJourney();
+  else { sc_view='cards'; scRenderCards(); }
+}
+
+function scHover(el,col,on){
+  el.style.borderColor=on?col:'var(--border)';
+  el.style.boxShadow=on?'0 4px 20px rgba(0,0,0,0.1)':'var(--shadow)';
+}
+function scRenderCards(){
+  sc_view='cards';
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+  main.innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:.5rem">
+    ${SC_JOURNEYS.map((j,i)=>`
+    <div onclick="scOpenJourney(${i})" onmouseover="scHover(this,'${j.col}',true)" onmouseout="scHover(this,'${j.col}',false)"
+      style="background:var(--bg);border-radius:var(--radius);padding:1.6rem 1.75rem;cursor:pointer;border:1px solid var(--border);transition:all .18s;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <span style="font-size:24px;color:${j.col};font-weight:300">${j.icon}</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:500">${j.steps.length} steps →</span>
+      </div>
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:5px">${j.name}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.55">${j.sub}</div>
+      <div style="margin-top:1.1rem;height:3px;border-radius:2px;background:${j.col};opacity:0.25;width:100%"></div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function scOpenJourney(i){
+  sc_journeyIdx=i;
+  sc_stepIdx=0;
+  sc_view='journey';
+  scRenderJourney();
+}
+
+function scRenderJourney(){
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const main=document.getElementById('sc-main');
+  if(!main) return;
+
+  // Phase labels
+  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
+
+  // Group steps by phase for the stepper
+  let lastPhase='';
+  const stepperHTML=j.steps.map((s,i)=>{
+    const isActive=i===sc_stepIdx;
+    const isDone=i<sc_stepIdx;
+    const phaseChange=s.phase!==lastPhase;
+    lastPhase=s.phase;
+    const phasePill=phaseChange?`<div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${phaseCols[s.phase]};margin-bottom:5px;padding-left:2px">${phaseLabel[s.phase]||s.phase}</div>`:'';
+    return `${phasePill}<button class="sc-step-btn" onclick="scGoStep(${i})" style="display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;border:1.5px solid ${isActive?phaseCols[s.phase]:'var(--border)'};background:${isActive?phaseBgs[s.phase]:'transparent'};cursor:pointer;margin-bottom:5px;transition:all .15s;font-size:12.5px;font-weight:${isActive?'600':'400'};color:${isActive?phaseCols[s.phase]:isDone?'var(--text3)':'var(--text2)'}">${s.name}</button>`;
+  }).join('');
+
+  const s=j.steps[sc_stepIdx];
+  const pCol=phaseCols[s.phase]||j.col;
+  const pBg=phaseBgs[s.phase]||j.bg;
+
+  main.innerHTML=`
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
+    <button onclick="scSetView('cards')" style="padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px">← Back</button>
+    <span style="font-size:15px;font-weight:600;color:${j.col}">${j.name}</span>
+    <span style="font-size:12px;color:var(--text3)">${j.sub}</span>
+  </div>
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;border:1px solid var(--border)">
+      ${stepperHTML}
+    </div>
+    <div class="sc-card" id="sc-step-card"></div>
+  </div>`;
+
+  scRenderStep();
+  if(editMode) setTimeout(activateEditMode,60);
+}
+
+function scGoStep(i){
+  const _j=SC_JOURNEYS[sc_journeyIdx];
+  if(!_j||i<0||i>=_j.steps.length) return;
+  sc_stepIdx=i;
+  // Update stepper button active states
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseBgs={outreach:j.bg,meeting:'#EEEDFE',after:'#E1F5EE'};
+  document.querySelectorAll('.sc-step-btn').forEach((btn,idx)=>{
+    const s=j.steps[idx];
+    const isActive=idx===i;
+    const isDone=idx<i;
+    const c=phaseCols[s.phase]||j.col;
+    const bg=phaseBgs[s.phase]||j.bg;
+    btn.style.borderColor=isActive?c:'var(--border)';
+    btn.style.background=isActive?bg:'transparent';
+    btn.style.color=isActive?c:isDone?'var(--text3)':'var(--text2)';
+    btn.style.fontWeight=isActive?'600':'400';
+  });
+  scRenderStep();
+  if(editMode) setTimeout(activateEditMode,60);
+}
+
+function scRenderStep(){
+  const _j2=SC_JOURNEYS[sc_journeyIdx];
+  if(!_j2||sc_stepIdx<0||sc_stepIdx>=_j2.steps.length) return;
+  const card=document.getElementById('sc-step-card');
+  if(!card) return;
+  const j=SC_JOURNEYS[sc_journeyIdx];
+  const s=j.steps[sc_stepIdx];
+  const phaseCols={outreach:j.col,meeting:'#534AB7',after:'#085041'};
+  const phaseLabel={outreach:'Outreach',meeting:'The Meeting',after:'Follow-up'};
+  const c=phaseCols[s.phase]||j.col;
+
+  const prev=sc_stepIdx>0?`<button onclick="scGoStep(${sc_stepIdx-1})" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);cursor:pointer;font-size:12px;color:var(--text2)">← Previous</button>`:'<span></span>';
+  const next=sc_stepIdx<j.steps.length-1?`<button onclick="scGoStep(${sc_stepIdx+1})" style="padding:6px 14px;border-radius:8px;border:none;background:${c};cursor:pointer;font-size:12px;color:#fff;font-weight:500">Next →</button>`:'<span style="font-size:12px;color:var(--text3);padding:6px 0">End of journey</span>';
+
+  card.innerHTML=`
+  <div class="sc-head">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${c};background:${j.bg};padding:3px 9px;border-radius:8px">${phaseLabel[s.phase]||s.phase}</span>
+      <span style="font-size:12px;color:var(--text3)">${sc_stepIdx+1} of ${j.steps.length}</span>
+    </div>
+    <div class="sc-title">${s.name}</div>
+  </div>
+  <div class="sc-body">${scStepHTML(s,c)}</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;border-top:1px solid var(--border)">${prev}${next}</div>`;
+}
+
+
+function scStepHTML(st,c){
+  let h=`<div class="sc-what">${st.title}</div><div class="sc-desc">${st.desc}</div>`;
+  if(st.rules)h+=`<div class="rules-list">`+st.rules.map((r,i)=>`<div class="sc-rule"><span class="sc-rule-num" style="color:${c}">${i+1}</span><span class="sc-rule-text">${r}</span></div>`).join('')+`</div>`;
+  if(st.fmt)h+=`<div class="fmt-grid2">
+    <div class="fmt-c"><span class="fmt-tag" style="background:#E6F1FB;color:#0C447C">20–30 min</span><div class="fmt-title">Discovery call</div><div class="fmt-det">No deck. Qualify and listen. Close for a formal meeting with a date.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#E1F5EE;color:#085041">45–90 min</span><div class="fmt-title">First formal meeting</div><div class="fmt-det">Optional deck. Bring one-pager. Close for proposal or next meeting.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#EEEDFE;color:#3C3489">60–120 min</span><div class="fmt-title">Board / committee pitch</div><div class="fmt-det">Full deck. Multiple leave-behinds. Close for proposal review date.</div></div>
+    <div class="fmt-c"><span class="fmt-tag" style="background:#FAEEDA;color:#633806">Open</span><div class="fmt-title">Informal / social</div><div class="fmt-det">No deck. Relationship first. Close for a follow-up call within 2 weeks.</div></div>
+  </div>`;
+  if(st.warn)h+=`<div class="sc-warn">${st.warn}</div>`;
+  if(st.good)h+=`<div class="sc-good">${st.good}</div>`;
+  if(st.info)h+=`<div class="sc-info">${st.info}</div>`;
+  if(st.branches)h+=`<div class="br-grid">${st.branches.map(b=>{
+    const bg={good:'var(--bg2)',neutral:'var(--bg3)',warn:'#fff5f5'};
+    const bd={good:'var(--border)',neutral:'var(--border2)',warn:'#fdd'};
+    const tx={good:c,neutral:'var(--text3)',warn:'#c03030'};
+    return`<div class="br-item" style="background:${bg[b.type]};border:0.5px solid ${bd[b.type]}"><strong style="color:${tx[b.type]}">${b.label}</strong><span style="color:var(--text2)">${b.text}</span></div>`;
+  }).join('')}</div>`;
+  if(st.objections)h+=`<div class="obj-stack">${st.objections.map(o=>`
+    <div class="obj-row">
+      <div class="obj-q"><div class="obj-lbl">They say</div>${o.q}</div>
+      <div class="obj-a"><div class="obj-lbl" style="color:${c}">You say</div>${o.a}</div>
+    </div>`).join('')}</div>`;
+  if(st.links)h+=`<div class="sc-links">${st.links.map(l=>`<button class="sc-lbtn">${l} ↗</button>`).join('')}</div>`;
+  return h;
+}
 
 
 function toggleEdit(){
