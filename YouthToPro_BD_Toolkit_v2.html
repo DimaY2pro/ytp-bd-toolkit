@@ -763,76 +763,52 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── SAVE TO SHAREPOINT VIA REST API ──
-const SP_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const SP_TENANT = 'youthtoprofessionals.sharepoint.com';
-const SP_SITE = '/sites/Directory';
-const SP_FILE_PATH = '/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html';
-const SP_RESOURCE = 'https://youthtoprofessionals.sharepoint.com';
-const REDIRECT_URI = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
+// ── SAVE TO GITHUB VIA GITHUB API ──
+const GH_OWNER = 'DimaY2pro';
+const GH_REPO  = 'ytp-bd-toolkit';
+const GH_FILE  = 'YouthToPro_BD_Toolkit_v2.html';
+const GH_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
+const GH_REDIRECT  = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
 
-async function getSharePointToken() {
-  // Check sessionStorage cache
-  const cached = sessionStorage.getItem('sp_token');
-  const cachedExp = sessionStorage.getItem('sp_token_exp');
-  if (cached && cachedExp && Date.now() < parseInt(cachedExp)) {
-    return cached;
-  }
+function saveToFile(){ saveToGitHub(); }
+function doSave(){ saveToGitHub(); }
+function saveToSharePoint(){ saveToGitHub(); }
 
-  // Check URL hash for returned token
+async function getMSToken() {
+  const cached = sessionStorage.getItem('ms_token');
+  const exp    = sessionStorage.getItem('ms_token_exp');
+  if (cached && exp && Date.now() < parseInt(exp)) return cached;
+
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
     const params = new URLSearchParams(hash.replace(/^#/,''));
-    const token = params.get('access_token');
-    const expiresIn = parseInt(params.get('expires_in') || '3600');
+    const token  = params.get('access_token');
+    const expIn  = parseInt(params.get('expires_in') || '3600');
     if (token) {
-      sessionStorage.setItem('sp_token', token);
-      sessionStorage.setItem('sp_token_exp', String(Date.now() + expiresIn * 1000 - 60000));
-      // Restore any pending save state
-      const pending = sessionStorage.getItem('sp_pending_save');
-      if (pending) {
-        sessionStorage.removeItem('sp_pending_save');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return token;
-      }
+      sessionStorage.setItem('ms_token', token);
+      sessionStorage.setItem('ms_token_exp', String(Date.now() + expIn * 1000 - 60000));
       window.history.replaceState({}, document.title, window.location.pathname);
       return token;
     }
   }
-
-  // Redirect to Microsoft login with SharePoint resource
-  sessionStorage.setItem('sp_pending_save', '1');
-  const authUrl = 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'
-    + '?client_id=' + SP_CLIENT_ID
-    + '&response_type=token'
-    + '&redirect_uri=' + encodeURIComponent(REDIRECT_URI)
-    + '&scope=' + encodeURIComponent(SP_RESOURCE + '/AllSites.Write ' + SP_RESOURCE + '/AllSites.Read')
-    + '&response_mode=fragment'
-    + '&prompt=select_account';
-  window.location.href = authUrl;
   return null;
 }
 
-async function saveToSharePoint() {
+async function saveToGitHub() {
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '↑ Save to OneDrive';
+  const origText = btn ? btn.textContent : '↑ Save';
 
   try {
-    if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
+    if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
 
-    const token = await getSharePointToken();
-    if (!token) return; // redirecting
-
-    if (btn) btn.textContent = 'Saving...';
-
-    // Build updated file content
+    // Build updated HTML content
     let html = _ORIGINAL_SRC;
     if (!html) {
       const el = document.getElementById('_src');
       if (el) _ORIGINAL_SRC = el.value;
       html = _ORIGINAL_SRC;
     }
-    if (!html) { alert('Source not available. Please reload.'); return; }
+    if (!html) throw new Error('Source not available — please reload.');
 
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
@@ -841,49 +817,73 @@ async function saveToSharePoint() {
     // Rebuild textarea
     const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
     const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m, open, close) { return open + escaped + close; }) || html;
+      function(m,o,c){ return o + escaped + c; }) || html;
 
-    // Upload via SharePoint REST API
-    const folderPath = '/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit';
-    const uploadUrl = 'https://' + SP_TENANT + SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('" + folderPath + "')/Files/add(url='YouthToPro_BD_Toolkit_v2.html',overwrite=true)";
+    // Encode to base64
+    const b64 = btoa(unescape(encodeURIComponent(fileContent)));
 
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/json;odata=verbose',
-        'Content-Type': 'application/octet-stream',
-        'X-RequestDigest': 'undefined'
-      },
-      body: fileContent
-    });
+    if (btn) btn.textContent = 'Getting token...';
 
-    if (response.ok) {
-      if (btn) { btn.textContent = '✓ Saved'; btn.style.background = '#347969'; }
+    // Get GitHub PAT from user (stored in sessionStorage after first entry)
+    let pat = sessionStorage.getItem('gh_pat');
+    if (!pat) {
+      pat = prompt('Enter your GitHub Personal Access Token (needed once per session):\n\nTo create one: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check "repo" scope');
+      if (!pat) { if(btn){btn.textContent=origText;btn.disabled=false;} return; }
+      sessionStorage.setItem('gh_pat', pat);
+    }
+
+    if (btn) btn.textContent = 'Saving...';
+
+    // Get current file SHA (required by GitHub API to update a file)
+    const shaResp = await fetch(
+      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
+      { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' }}
+    );
+    if (!shaResp.ok) {
+      sessionStorage.removeItem('gh_pat');
+      throw new Error('Could not access GitHub repo. Check your token has "repo" scope. HTTP ' + shaResp.status);
+    }
+    const shaData = await shaResp.json();
+    const sha = shaData.sha;
+
+    // Update the file
+    const updateResp = await fetch(
+      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + pat,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Update BD Toolkit content',
+          content: b64,
+          sha: sha
+        })
+      }
+    );
+
+    if (updateResp.ok) {
+      if (btn) { btn.textContent = '✓ Saved to GitHub'; btn.style.background = '#347969'; }
+      const t = document.getElementById('toast');
+      if (t) { t.className = 'toast show'; setTimeout(()=>t.className='toast', 2500); }
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
-      const t = document.getElementById('toast');
-      if (t) { t.className = 'toast show'; setTimeout(() => t.className = 'toast', 2500); }
     } else {
-      const errText = await response.text();
-      throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
+      const errData = await updateResp.json();
+      sessionStorage.removeItem('gh_pat');
+      throw new Error(errData.message || 'GitHub update failed — HTTP ' + updateResp.status);
     }
 
   } catch(e) {
-    console.error('SharePoint save error:', e);
+    console.error('GitHub save error:', e);
     if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; } }, 4000);
-    alert('Save failed: ' + e.message + '\n\nCheck console for details.');
+    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; }}, 4000);
+    alert('Save failed: ' + e.message);
   }
 }
-
-// Auto-complete save if returning from login redirect
-window.addEventListener('load', function() {
-  if (window.location.hash.includes('access_token') && sessionStorage.getItem('sp_pending_save')) {
-    setTimeout(saveToSharePoint, 500);
-  }
-});
 
 
 renderStrategic();
@@ -1654,76 +1654,52 @@ function repObj(html, name, val){
     function(m,a,b){ return a+JSON.stringify(val)+';'+b; });
 }
 
-// ── SAVE TO SHAREPOINT VIA REST API ──
-const SP_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
-const SP_TENANT = 'youthtoprofessionals.sharepoint.com';
-const SP_SITE = '/sites/Directory';
-const SP_FILE_PATH = '/Shared Documents/40 Sales & Customer Management/Business Development/BD Toolkit/YouthToPro_BD_Toolkit_v2.html';
-const SP_RESOURCE = 'https://youthtoprofessionals.sharepoint.com';
-const REDIRECT_URI = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
+// ── SAVE TO GITHUB VIA GITHUB API ──
+const GH_OWNER = 'DimaY2pro';
+const GH_REPO  = 'ytp-bd-toolkit';
+const GH_FILE  = 'YouthToPro_BD_Toolkit_v2.html';
+const GH_CLIENT_ID = '51601105-211b-4ca0-809e-4db5ce959235';
+const GH_REDIRECT  = 'https://dimay2pro.github.io/ytp-bd-toolkit/YouthToPro_BD_Toolkit_v2.html';
 
-async function getSharePointToken() {
-  // Check sessionStorage cache
-  const cached = sessionStorage.getItem('sp_token');
-  const cachedExp = sessionStorage.getItem('sp_token_exp');
-  if (cached && cachedExp && Date.now() < parseInt(cachedExp)) {
-    return cached;
-  }
+function saveToFile(){ saveToGitHub(); }
+function doSave(){ saveToGitHub(); }
+function saveToSharePoint(){ saveToGitHub(); }
 
-  // Check URL hash for returned token
+async function getMSToken() {
+  const cached = sessionStorage.getItem('ms_token');
+  const exp    = sessionStorage.getItem('ms_token_exp');
+  if (cached && exp && Date.now() < parseInt(exp)) return cached;
+
   const hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
     const params = new URLSearchParams(hash.replace(/^#/,''));
-    const token = params.get('access_token');
-    const expiresIn = parseInt(params.get('expires_in') || '3600');
+    const token  = params.get('access_token');
+    const expIn  = parseInt(params.get('expires_in') || '3600');
     if (token) {
-      sessionStorage.setItem('sp_token', token);
-      sessionStorage.setItem('sp_token_exp', String(Date.now() + expiresIn * 1000 - 60000));
-      // Restore any pending save state
-      const pending = sessionStorage.getItem('sp_pending_save');
-      if (pending) {
-        sessionStorage.removeItem('sp_pending_save');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return token;
-      }
+      sessionStorage.setItem('ms_token', token);
+      sessionStorage.setItem('ms_token_exp', String(Date.now() + expIn * 1000 - 60000));
       window.history.replaceState({}, document.title, window.location.pathname);
       return token;
     }
   }
-
-  // Redirect to Microsoft login with SharePoint resource
-  sessionStorage.setItem('sp_pending_save', '1');
-  const authUrl = 'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize'
-    + '?client_id=' + SP_CLIENT_ID
-    + '&response_type=token'
-    + '&redirect_uri=' + encodeURIComponent(REDIRECT_URI)
-    + '&scope=' + encodeURIComponent(SP_RESOURCE + '/AllSites.Write ' + SP_RESOURCE + '/AllSites.Read')
-    + '&response_mode=fragment'
-    + '&prompt=select_account';
-  window.location.href = authUrl;
   return null;
 }
 
-async function saveToSharePoint() {
+async function saveToGitHub() {
   const btn = document.getElementById('save-btn');
-  const origText = btn ? btn.textContent : '↑ Save to OneDrive';
+  const origText = btn ? btn.textContent : '↑ Save';
 
   try {
-    if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
+    if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
 
-    const token = await getSharePointToken();
-    if (!token) return; // redirecting
-
-    if (btn) btn.textContent = 'Saving...';
-
-    // Build updated file content
+    // Build updated HTML content
     let html = _ORIGINAL_SRC;
     if (!html) {
       const el = document.getElementById('_src');
       if (el) _ORIGINAL_SRC = el.value;
       html = _ORIGINAL_SRC;
     }
-    if (!html) { alert('Source not available. Please reload.'); return; }
+    if (!html) throw new Error('Source not available — please reload.');
 
     html = repArr(html, 'PERSONAS', PERSONAS);
     html = repArr(html, 'TEMPLATES', TEMPLATES);
@@ -1732,49 +1708,73 @@ async function saveToSharePoint() {
     // Rebuild textarea
     const escaped = html.replace(/<\/textarea>/g, '<\\/textarea>');
     const fileContent = html.replace(/(<textarea id="_src"[^>]*>)[\s\S]*?(<\/textarea>)/,
-      function(m, open, close) { return open + escaped + close; }) || html;
+      function(m,o,c){ return o + escaped + c; }) || html;
 
-    // Upload via SharePoint REST API
-    const folderPath = '/sites/Directory/Shared%20Documents/40%20Sales%20%26%20Customer%20Management/Business%20Development/BD%20Toolkit';
-    const uploadUrl = 'https://' + SP_TENANT + SP_SITE + "/_api/web/GetFolderByServerRelativeUrl('" + folderPath + "')/Files/add(url='YouthToPro_BD_Toolkit_v2.html',overwrite=true)";
+    // Encode to base64
+    const b64 = btoa(unescape(encodeURIComponent(fileContent)));
 
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/json;odata=verbose',
-        'Content-Type': 'application/octet-stream',
-        'X-RequestDigest': 'undefined'
-      },
-      body: fileContent
-    });
+    if (btn) btn.textContent = 'Getting token...';
 
-    if (response.ok) {
-      if (btn) { btn.textContent = '✓ Saved'; btn.style.background = '#347969'; }
+    // Get GitHub PAT from user (stored in sessionStorage after first entry)
+    let pat = sessionStorage.getItem('gh_pat');
+    if (!pat) {
+      pat = prompt('Enter your GitHub Personal Access Token (needed once per session):\n\nTo create one: github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check "repo" scope');
+      if (!pat) { if(btn){btn.textContent=origText;btn.disabled=false;} return; }
+      sessionStorage.setItem('gh_pat', pat);
+    }
+
+    if (btn) btn.textContent = 'Saving...';
+
+    // Get current file SHA (required by GitHub API to update a file)
+    const shaResp = await fetch(
+      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
+      { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' }}
+    );
+    if (!shaResp.ok) {
+      sessionStorage.removeItem('gh_pat');
+      throw new Error('Could not access GitHub repo. Check your token has "repo" scope. HTTP ' + shaResp.status);
+    }
+    const shaData = await shaResp.json();
+    const sha = shaData.sha;
+
+    // Update the file
+    const updateResp = await fetch(
+      'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_FILE,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + pat,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Update BD Toolkit content',
+          content: b64,
+          sha: sha
+        })
+      }
+    );
+
+    if (updateResp.ok) {
+      if (btn) { btn.textContent = '✓ Saved to GitHub'; btn.style.background = '#347969'; }
+      const t = document.getElementById('toast');
+      if (t) { t.className = 'toast show'; setTimeout(()=>t.className='toast', 2500); }
       setTimeout(() => {
         if (btn) { btn.textContent = origText; btn.style.background = ''; btn.disabled = false; }
       }, 3000);
-      const t = document.getElementById('toast');
-      if (t) { t.className = 'toast show'; setTimeout(() => t.className = 'toast', 2500); }
     } else {
-      const errText = await response.text();
-      throw new Error('HTTP ' + response.status + ': ' + errText.slice(0, 200));
+      const errData = await updateResp.json();
+      sessionStorage.removeItem('gh_pat');
+      throw new Error(errData.message || 'GitHub update failed — HTTP ' + updateResp.status);
     }
 
   } catch(e) {
-    console.error('SharePoint save error:', e);
+    console.error('GitHub save error:', e);
     if (btn) { btn.textContent = '✗ Failed'; btn.disabled = false; btn.style.background = '#c03030'; }
-    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; } }, 4000);
-    alert('Save failed: ' + e.message + '\n\nCheck console for details.');
+    setTimeout(() => { if (btn) { btn.textContent = origText; btn.style.background = ''; }}, 4000);
+    alert('Save failed: ' + e.message);
   }
 }
-
-// Auto-complete save if returning from login redirect
-window.addEventListener('load', function() {
-  if (window.location.hash.includes('access_token') && sessionStorage.getItem('sp_pending_save')) {
-    setTimeout(saveToSharePoint, 500);
-  }
-});
 
 
 renderStrategic();
