@@ -31,6 +31,8 @@
 
 
 
+
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #ffffff; --bg2: #FFFAF2; --bg3: #f0f4f6;
@@ -282,6 +284,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 
 
 
+
+
+
+.badge-draft{display:inline-block;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:#FEF3C7;color:#92400E;white-space:nowrap}
 
 
 </style>
@@ -679,19 +685,19 @@ function si(i){ii=i;renderPersonas();if(editMode)setTimeout(activateEditMode,50)
 const TEMPLATES=[
   {phase:"All Templates",col:"#152840",sub:"One master list — all BD documents across every partner type and meeting stage",
    items:[
-    {code:"T01",name:"Partner Research Brief",desc:"One-page profile to complete before any first contact — org mandate, decision-maker name, current priorities, entry angle, and two likely objections",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T02",name:"Meeting Pitch Planner",desc:"Pre-meeting worksheet to formulate your pitch for any partner type — lead pillar, opening sentences, proof point, close ask, and two objections prepared.",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T03",name:"30-Second Elevator Script",desc:"Word-for-word script for live encounters and networking. Problem → system → proof → question. Memorisable, adaptable to any persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T04",name:"Live Meeting Notes Template",desc:"Structured capture sheet: partner details, their priorities, objections raised, agreed next step, and your read (hot/warm/cold/park)",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T05",name:"Universal One-Pager",desc:"Leave-behind for any partner type. YouthToPro overview, proof points, partnership call to action. Use when persona is unclear",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T06",name:"Partner Pipeline Tracker",desc:"Shared tracker for all active BD conversations — stage, persona, country, owner, next action, and follow-up date",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T07",name:"Meeting Prep Checklist",desc:"5-point pre-meeting checklist: persona card reviewed, context researched, format chosen, close prepared, two objections anticipated",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T08",name:"Partner Pitch Deck",desc:"10-slide flagship deck for formal meetings. Adaptable per persona and country. Problem → system → proof → partnership ask",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T09",name:"Cold Outreach Template",desc:"First-contact email framework adaptable to any persona. Leads with the problem, connects to their world in one line, closes with one specific ask",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T10",name:"3-Minute Pitch Script",desc:"Full script for first meetings. Opens with the problem, builds the case through the 4 pillars, closes for a specific next step. Adapt the close per persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T11",name:"Persona One-Pager",desc:"Leave-behind tailored to the partner type — language, proof points, and partnership ask adjusted per persona. Six versions in one document",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T12",name:"Objection Handling Card",desc:"Scripted responses to the most common objections across all partner types, organised by persona. Use the 4-step structure: Acknowledge → Reframe → Proof → Bridge",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T13",name:"Follow-Up Email Sequence",desc:"Day 1 / Day 5 / Day 14 / Day 30 templates. Cadence notes for cold, inbound, and warm intro contacts. Adapt tone per persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"}
+    {code:"T01",name:"Partner Research Brief",desc:"One-page profile to complete before any first contact — org mandate, decision-maker name, current priorities, entry angle, and two likely objections",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T02",name:"Meeting Pitch Planner",desc:"Pre-meeting worksheet to formulate your pitch for any partner type — lead pillar, opening sentences, proof point, close ask, and two objections prepared.",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T03",name:"30-Second Elevator Script",desc:"Word-for-word script for live encounters and networking. Problem → system → proof → question. Memorisable, adaptable to any persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T04",name:"Live Meeting Notes Template",desc:"Structured capture sheet: partner details, their priorities, objections raised, agreed next step, and your read (hot/warm/cold/park)",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T05",name:"Universal One-Pager",desc:"Leave-behind for any partner type. YouthToPro overview, proof points, partnership call to action. Use when persona is unclear",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T06",name:"Partner Pipeline Tracker",desc:"Shared tracker for all active BD conversations — stage, persona, country, owner, next action, and follow-up date",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T07",name:"Meeting Prep Checklist",desc:"5-point pre-meeting checklist: persona card reviewed, context researched, format chosen, close prepared, two objections anticipated",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T08",name:"Partner Pitch Deck",desc:"10-slide flagship deck for formal meetings. Adaptable per persona and country. Problem → system → proof → partnership ask",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T09",name:"Cold Outreach Template",desc:"First-contact email framework adaptable to any persona. Leads with the problem, connects to their world in one line, closes with one specific ask",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T10",name:"3-Minute Pitch Script",desc:"Full script for first meetings. Opens with the problem, builds the case through the 4 pillars, closes for a specific next step. Adapt the close per persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T11",name:"Persona One-Pager",desc:"Leave-behind tailored to the partner type — language, proof points, and partnership ask adjusted per persona. Six versions in one document",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T12",name:"Objection Handling Card",desc:"Scripted responses to the most common objections across all partner types, organised by persona. Use the 4-step structure: Acknowledge → Reframe → Proof → Bridge",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T13",name:"Follow-Up Email Sequence",desc:"Day 1 / Day 5 / Day 14 / Day 30 templates. Cadence notes for cold, inbound, and warm intro contacts. Adapt tone per persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"}
   ]}
 ];
 
@@ -720,7 +726,7 @@ function renderTemplates(){
               <div class="tpl-name"><span class="tpl-code-badge">${t.code||''}</span>${t.name}</div>
               <div class="tpl-desc">${t.desc}</div>
             </div>
-            <span class="tpl-badge ${t.badge==='ready'?'badge-ready':'badge-soon'}">${t.badge==='ready'?'Ready':'Coming'}</span>
+            <span class="tpl-badge ${t.badge==='draft'?'badge-draft':t.badge==='ready'?'badge-ready':'badge-soon'}">${t.badge==='draft'?'Draft':t.badge==='ready'?'Ready':'Coming'}</span>
           </div>`).join('')}
       </div>
     </div>
@@ -1448,6 +1454,8 @@ renderStrategic();
 
 
 
+
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg: #ffffff; --bg2: #FFFAF2; --bg3: #f0f4f6;
@@ -1699,6 +1707,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 
 
 
+
+
+
+.badge-draft{display:inline-block;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:#FEF3C7;color:#92400E;white-space:nowrap}
 
 
 </style>
@@ -2096,19 +2108,19 @@ function si(i){ii=i;renderPersonas();if(editMode)setTimeout(activateEditMode,50)
 const TEMPLATES=[
   {phase:"All Templates",col:"#152840",sub:"One master list — all BD documents across every partner type and meeting stage",
    items:[
-    {code:"T01",name:"Partner Research Brief",desc:"One-page profile to complete before any first contact — org mandate, decision-maker name, current priorities, entry angle, and two likely objections",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T02",name:"Meeting Pitch Planner",desc:"Pre-meeting worksheet to formulate your pitch for any partner type — lead pillar, opening sentences, proof point, close ask, and two objections prepared.",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T03",name:"30-Second Elevator Script",desc:"Word-for-word script for live encounters and networking. Problem → system → proof → question. Memorisable, adaptable to any persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T04",name:"Live Meeting Notes Template",desc:"Structured capture sheet: partner details, their priorities, objections raised, agreed next step, and your read (hot/warm/cold/park)",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T05",name:"Universal One-Pager",desc:"Leave-behind for any partner type. YouthToPro overview, proof points, partnership call to action. Use when persona is unclear",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T06",name:"Partner Pipeline Tracker",desc:"Shared tracker for all active BD conversations — stage, persona, country, owner, next action, and follow-up date",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T07",name:"Meeting Prep Checklist",desc:"5-point pre-meeting checklist: persona card reviewed, context researched, format chosen, close prepared, two objections anticipated",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T08",name:"Partner Pitch Deck",desc:"10-slide flagship deck for formal meetings. Adaptable per persona and country. Problem → system → proof → partnership ask",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T09",name:"Cold Outreach Template",desc:"First-contact email framework adaptable to any persona. Leads with the problem, connects to their world in one line, closes with one specific ask",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T10",name:"3-Minute Pitch Script",desc:"Full script for first meetings. Opens with the problem, builds the case through the 4 pillars, closes for a specific next step. Adapt the close per persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T11",name:"Persona One-Pager",desc:"Leave-behind tailored to the partner type — language, proof points, and partnership ask adjusted per persona. Six versions in one document",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T12",name:"Objection Handling Card",desc:"Scripted responses to the most common objections across all partner types, organised by persona. Use the 4-step structure: Acknowledge → Reframe → Proof → Bridge",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
-    {code:"T13",name:"Follow-Up Email Sequence",desc:"Day 1 / Day 5 / Day 14 / Day 30 templates. Cadence notes for cold, inbound, and warm intro contacts. Adapt tone per persona",badge:"ready",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"}
+    {code:"T01",name:"Partner Research Brief",desc:"One-page profile to complete before any first contact — org mandate, decision-maker name, current priorities, entry angle, and two likely objections",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T02",name:"Meeting Pitch Planner",desc:"Pre-meeting worksheet to formulate your pitch for any partner type — lead pillar, opening sentences, proof point, close ask, and two objections prepared.",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T03",name:"30-Second Elevator Script",desc:"Word-for-word script for live encounters and networking. Problem → system → proof → question. Memorisable, adaptable to any persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T04",name:"Live Meeting Notes Template",desc:"Structured capture sheet: partner details, their priorities, objections raised, agreed next step, and your read (hot/warm/cold/park)",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T05",name:"Universal One-Pager",desc:"Leave-behind for any partner type. YouthToPro overview, proof points, partnership call to action. Use when persona is unclear",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T06",name:"Partner Pipeline Tracker",desc:"Shared tracker for all active BD conversations — stage, persona, country, owner, next action, and follow-up date",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T07",name:"Meeting Prep Checklist",desc:"5-point pre-meeting checklist: persona card reviewed, context researched, format chosen, close prepared, two objections anticipated",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T08",name:"Partner Pitch Deck",desc:"10-slide flagship deck for formal meetings. Adaptable per persona and country. Problem → system → proof → partnership ask",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T09",name:"Cold Outreach Template",desc:"First-contact email framework adaptable to any persona. Leads with the problem, connects to their world in one line, closes with one specific ask",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T10",name:"3-Minute Pitch Script",desc:"Full script for first meetings. Opens with the problem, builds the case through the 4 pillars, closes for a specific next step. Adapt the close per persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T11",name:"Persona One-Pager",desc:"Leave-behind tailored to the partner type — language, proof points, and partnership ask adjusted per persona. Six versions in one document",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T12",name:"Objection Handling Card",desc:"Scripted responses to the most common objections across all partner types, organised by persona. Use the 4-step structure: Acknowledge → Reframe → Proof → Bridge",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"},
+    {code:"T13",name:"Follow-Up Email Sequence",desc:"Day 1 / Day 5 / Day 14 / Day 30 templates. Cadence notes for cold, inbound, and warm intro contacts. Adapt tone per persona",badge:"draft",url:"https://youthtoprofessionals.sharepoint.com/:f:/s/Directory/IgCH5uJy8NlOTIj5K50eWxDsAZPWj8BNJNv9ayDxD3tSToQ?e=BpszuP"}
   ]}
 ];
 
@@ -2137,7 +2149,7 @@ function renderTemplates(){
               <div class="tpl-name"><span class="tpl-code-badge">${t.code||''}</span>${t.name}</div>
               <div class="tpl-desc">${t.desc}</div>
             </div>
-            <span class="tpl-badge ${t.badge==='ready'?'badge-ready':'badge-soon'}">${t.badge==='ready'?'Ready':'Coming'}</span>
+            <span class="tpl-badge ${t.badge==='draft'?'badge-draft':t.badge==='ready'?'badge-ready':'badge-soon'}">${t.badge==='draft'?'Draft':t.badge==='ready'?'Ready':'Coming'}</span>
           </div>`).join('')}
       </div>
     </div>
